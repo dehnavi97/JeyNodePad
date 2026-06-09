@@ -1,0 +1,582 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+/* Load Vazirmatn Offline from Local Assets */
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('../assets/webfonts/Vazirmatn[wght].woff2') format('woff2-supports-variations'),
+       url('../assets/webfonts/Vazirmatn[wght].woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('../assets/webfonts/Vazirmatn-Thin.woff2') format('woff2');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('../assets/webfonts/Vazirmatn-ExtraLight.woff2') format('woff2');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('../assets/webfonts/Vazirmatn-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('../assets/webfonts/Vazirmatn-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('../assets/webfonts/Vazirmatn-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('../assets/webfonts/Vazirmatn-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('../assets/webfonts/Vazirmatn-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('../assets/webfonts/Vazirmatn-ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('../assets/webfonts/Vazirmatn-Black.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Vazirmatn", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* Custom palette mapped to variables */
+  --color-brand-bg: var(--brand-bg);
+  --color-brand-card: var(--brand-card);
+  --color-brand-border: var(--brand-border);
+  --color-brand-border-focus: var(--brand-border-focus);
+  --color-brand-accent: var(--brand-accent);
+  --color-brand-accent-secondary: var(--brand-accent-secondary);
+  --color-brand-text: var(--brand-text);
+  --color-brand-text-muted: var(--brand-text-muted);
+  --color-brand-shadow: var(--brand-shadow);
+}
+
+/* Base style resets and customizations */
+body {
+  background-color: var(--brand-bg);
+  color: var(--brand-text);
+  font-family: Vazirmatn;
+  transition: background-color 0.4s ease, color 0.4s ease;
+  overflow-x: hidden;
+}
+
+.font-mono,input,button,select,textarea,option{
+  font-family: Vazirmatn !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--brand-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--brand-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--brand-accent);
+}
+
+/* Custom themes definitions */
+:root {
+  /* Default: soft-orange */
+  --brand-bg: #fffbf7;
+  --brand-card: #ffffff;
+  --brand-border: #fed7aa;
+  --brand-border-focus: #f97316;
+  --brand-accent: #f97316;
+  --brand-accent-secondary: #ffedd5;
+  --brand-text: #1c1917;
+  --brand-text-muted: #6b6661;
+  --brand-shadow: rgba(249, 115, 22, 0.12);
+}
+
+.theme-soft-orange {
+  --brand-bg: #fffbf7;
+  --brand-card: #ffffff;
+  --brand-border: #fed7aa;
+  --brand-border-focus: #f97316;
+  --brand-accent: #f97316;
+  --brand-accent-secondary: #ffedd5;
+  --brand-text: #1c1917;
+  --brand-text-muted: #6b6661;
+  --brand-shadow: rgba(249, 115, 22, 0.12);
+}
+
+/* Force light theme inputs/select/textarea text and values to show up dark brown */
+.theme-soft-orange select,
+.theme-soft-orange input[type="text"],
+.theme-soft-orange input[type="number"],
+.theme-soft-orange input[type="password"],
+.theme-soft-orange textarea,
+.theme-soft-orange select option {
+  background-color: #ffffff !important;
+  color: #1c1917 !important;
+  border-color: #fed7aa !important;
+}
+
+.theme-soft-orange input::placeholder,
+.theme-soft-orange textarea::placeholder {
+  color: #a8a29e !important;
+}
+
+/* Make text-white inside cards and headings match the dark text of light theme,
+   except when they have inline style colors (e.g., active tag badges) */
+.theme-soft-orange .text-white:not([style*="color"]) {
+  color: #1c1917 !important;
+}
+
+/* Prevent hover:text-white from scaling/turning white on light backgrounds,
+   unless they are hovered on a bright background button */
+.theme-soft-orange .hover\:text-white:hover {
+  color: var(--brand-text) !important;
+}
+
+.theme-soft-orange .hover\:bg-brand-accent:hover,
+.theme-soft-orange .hover\:bg-rose-500:hover,
+.theme-soft-orange .hover\:bg-rose-600:hover,
+.theme-soft-orange .hover\:bg-emerald-500:hover,
+.theme-soft-orange .hover\:bg-emerald-600:hover,
+.theme-soft-orange .hover\:bg-blue-500:hover {
+  color: #ffffff !important;
+}
+
+/* White text remains on bright backgrounds/buttons for high readability */
+.theme-soft-orange .bg-brand-accent .text-white,
+.theme-soft-orange .bg-brand-accent.text-white,
+.theme-soft-orange button.bg-brand-accent,
+.theme-soft-orange button.bg-brand-accent *,
+.theme-soft-orange .bg-rose-500 .text-white,
+.theme-soft-orange .bg-rose-500.text-white,
+.theme-soft-orange button.bg-rose-500,
+.theme-soft-orange button.bg-rose-500 *,
+.theme-soft-orange .bg-rose-600 .text-white,
+.theme-soft-orange .bg-rose-600.text-white,
+.theme-soft-orange button.bg-rose-600,
+.theme-soft-orange button.bg-rose-600 *,
+.theme-soft-orange .bg-emerald-500 .text-white,
+.theme-soft-orange .bg-emerald-500.text-white,
+.theme-soft-orange button.bg-emerald-500,
+.theme-soft-orange button.bg-emerald-500 *,
+.theme-soft-orange .bg-emerald-600 .text-white,
+.theme-soft-orange .bg-emerald-600.text-white,
+.theme-soft-orange button.bg-emerald-600,
+.theme-soft-orange button.bg-emerald-600 *,
+.theme-soft-orange .bg-blue-500 .text-white,
+.theme-soft-orange .bg-blue-500.text-white,
+.theme-soft-orange .bg-gradient-to-br .text-white,
+.theme-soft-orange .bg-gradient-to-br.text-white,
+.theme-soft-orange .bg-gradient-to-br * {
+  color: #ffffff !important;
+}
+
+.theme-neon-dark {
+  --brand-bg: #070913;
+  --brand-card: #0f1325;
+  --brand-border: #1d2442;
+  --brand-border-focus: #8b5cf6;
+  --brand-accent: #a78bfa;
+  --brand-accent-secondary: #06b6d4;
+  --brand-text: #f1f5f9;
+  --brand-text-muted: #64748b;
+  --brand-shadow: rgba(139, 92, 246, 0.25);
+}
+
+.theme-cyberpunk {
+  --brand-bg: #0d0714;
+  --brand-card: #180924;
+  --brand-border: #eab308;
+  --brand-border-focus: #ec4899;
+  --brand-accent: #facc15;
+  --brand-accent-secondary: #ec4899;
+  --brand-text: #fafafa;
+  --brand-text-muted: #a78bfa;
+  --brand-shadow: rgba(250, 204, 21, 0.3);
+}
+
+.theme-emerald-gate {
+  --brand-bg: #050d0b;
+  --brand-card: #0c1a16;
+  --brand-border: #163f35;
+  --brand-border-focus: #10b981;
+  --brand-accent: #10b981;
+  --brand-accent-secondary: #34d399;
+  --brand-text: #f0fdf4;
+  --brand-text-muted: #4ade80;
+  --brand-shadow: rgba(16, 185, 129, 0.25);
+}
+
+.theme-sunset-pulse {
+  --brand-bg: #120909;
+  --brand-card: #1f1111;
+  --brand-border: #3b1919;
+  --brand-border-focus: #f97316;
+  --brand-accent: #f97316;
+  --brand-accent-secondary: #facc15;
+  --brand-text: #fffdfa;
+  --brand-text-muted: #fb923c;
+  --brand-shadow: rgba(249, 115, 22, 0.25);
+}
+
+.theme-royal-classic {
+  --brand-bg: #070b12;
+  --brand-card: #0d1527;
+  --brand-border: #854d0e;
+  --brand-border-focus: #eab308;
+  --brand-accent: #f59e0b;
+  --brand-accent-secondary: #38bdf8;
+  --brand-text: #fcfbf7;
+  --brand-text-muted: #94a3b8;
+  --brand-shadow: rgba(245, 158, 11, 0.3);
+}
+
+.theme-frosted-glass {
+  --brand-bg: #08080c;
+  --brand-card: rgba(255, 255, 255, 0.03);
+  --brand-border: rgba(255, 255, 255, 0.08);
+  --brand-border-focus: #6366f1;
+  --brand-accent: #818cf8;
+  --brand-accent-secondary: #34d399;
+  --brand-text: #e2e8f0;
+  --brand-text-muted: #94a3b8;
+  --brand-shadow: rgba(99, 102, 241, 0.25);
+
+  background-image: 
+    radial-gradient(circle at 10% 10%, #1e1b4b 0%, transparent 45%),
+    radial-gradient(circle at 90% 90%, #312e81 0%, transparent 45%) !important;
+}
+
+.theme-frosted-emerald {
+  --brand-bg: #040806;
+  --brand-card: rgba(255, 255, 255, 0.03);
+  --brand-border: rgba(255, 255, 255, 0.08);
+  --brand-border-focus: #10b981;
+  --brand-accent: #34d399;
+  --brand-accent-secondary: #a7f3d0;
+  --brand-text: #ecfdf5;
+  --brand-text-muted: #6ee7b7;
+  --brand-shadow: rgba(16, 185, 129, 0.25);
+
+  background-image: 
+    radial-gradient(circle at 15% 15%, #064e3b 0%, transparent 50%),
+    radial-gradient(circle at 85% 85%, #022c22 0%, transparent 50%) !important;
+}
+
+.theme-frosted-amethyst {
+  --brand-bg: #090514;
+  --brand-card: rgba(255, 255, 255, 0.03);
+  --brand-border: rgba(255, 255, 255, 0.08);
+  --brand-border-focus: #a855f7;
+  --brand-accent: #c084fc;
+  --brand-accent-secondary: #f472b6;
+  --brand-text: #faf5ff;
+  --brand-text-muted: #d8b4fe;
+  --brand-shadow: rgba(168, 85, 247, 0.25);
+
+  background-image: 
+    radial-gradient(circle at 15% 15%, #4c1d95 0%, transparent 50%),
+    radial-gradient(circle at 85% 85%, #2e1065 0%, transparent 50%) !important;
+}
+
+.theme-frosted-sunset {
+  --brand-bg: #0f0505;
+  --brand-card: rgba(255, 255, 255, 0.03);
+  --brand-border: rgba(255, 255, 255, 0.08);
+  --brand-border-focus: #f97316;
+  --brand-accent: #fb923c;
+  --brand-accent-secondary: #facc15;
+  --brand-text: #fffaf0;
+  --brand-text-muted: #fdba74;
+  --brand-shadow: rgba(249, 115, 22, 0.25);
+
+  background-image: 
+    radial-gradient(circle at 15% 15%, #7c2d12 0%, transparent 50%),
+    radial-gradient(circle at 85% 85%, #4c0519 0%, transparent 50%) !important;
+}
+
+.theme-frosted-ocean {
+  --brand-bg: #030812;
+  --brand-card: rgba(255, 255, 255, 0.03);
+  --brand-border: rgba(255, 255, 255, 0.08);
+  --brand-border-focus: #0ea5e9;
+  --brand-accent: #38bdf8;
+  --brand-accent-secondary: #22d3ee;
+  --brand-text: #f0f9ff;
+  --brand-text-muted: #7dd3fc;
+  --brand-shadow: rgba(14, 165, 233, 0.25);
+
+  background-image: 
+    radial-gradient(circle at 15% 15%, #0c4a6e 0%, transparent 50%),
+    radial-gradient(circle at 85% 85%, #0f172a 0%, transparent 50%) !important;
+}
+
+.theme-frosted-cyberpunk {
+  --brand-bg: #0a030f;
+  --brand-card: rgba(255, 255, 255, 0.03);
+  --brand-border: rgba(255, 255, 255, 0.1);
+  --brand-border-focus: #ec4899;
+  --brand-accent: #eab308;
+  --brand-accent-secondary: #06b6d4;
+  --brand-text: #fafafa;
+  --brand-text-muted: #ec4899;
+  --brand-shadow: rgba(236, 72, 153, 0.3);
+
+  background-image: 
+    radial-gradient(circle at 15% 15%, #500724 0%, transparent 55%),
+    radial-gradient(circle at 85% 85%, #1e1b4b 0%, transparent 55%) !important;
+}
+
+.theme-nordic-cold {
+  --brand-bg: #0d0f12;
+  --brand-card: rgba(255, 255, 255, 0.02);
+  --brand-border: rgba(255, 255, 255, 0.07);
+  --brand-border-focus: #94a3b8;
+  --brand-accent: #cbd5e1;
+  --brand-accent-secondary: #94a3b8;
+  --brand-text: #f8fafc;
+  --brand-text-muted: #94a3b8;
+  --brand-shadow: rgba(148, 163, 184, 0.15);
+
+  background-image: 
+    radial-gradient(circle at 15% 15%, #1e293b 0%, transparent 45%),
+    radial-gradient(circle at 85% 85%, #0f172a 0%, transparent 45%) !important;
+}
+
+.theme-sweet-pink {
+  --brand-bg: #12050b;
+  --brand-card: rgba(255, 255, 255, 0.03);
+  --brand-border: rgba(255, 255, 255, 0.08);
+  --brand-border-focus: #ec4899;
+  --brand-accent: #f472b6;
+  --brand-accent-secondary: #c084fc;
+  --brand-text: #fff1f2;
+  --brand-text-muted: #fbcfe8;
+  --brand-shadow: rgba(236, 72, 153, 0.25);
+
+  background-image: 
+    radial-gradient(circle at 15% 15%, #4d0725 0%, transparent 50%),
+    radial-gradient(circle at 85% 85%, #3b0764 0%, transparent 50%) !important;
+}
+
+/* Glass Panels & Glass Cards Overrides for all frosted themes */
+.theme-frosted-glass .bg-brand-card,
+.theme-frosted-glass .glass-panel,
+.theme-frosted-emerald .bg-brand-card,
+.theme-frosted-emerald .glass-panel,
+.theme-frosted-amethyst .bg-brand-card,
+.theme-frosted-amethyst .glass-panel,
+.theme-frosted-sunset .bg-brand-card,
+.theme-frosted-sunset .glass-panel,
+.theme-frosted-ocean .bg-brand-card,
+.theme-frosted-ocean .glass-panel,
+.theme-frosted-cyberpunk .bg-brand-card,
+.theme-frosted-cyberpunk .glass-panel,
+.theme-nordic-cold .bg-brand-card,
+.theme-nordic-cold .glass-panel,
+.theme-sweet-pink .bg-brand-card,
+.theme-sweet-pink .glass-panel {
+  background: rgba(255, 255, 255, 0.03) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.theme-frosted-glass .glass-card,
+.theme-frosted-glass .bg-brand-bg,
+.theme-frosted-emerald .glass-card,
+.theme-frosted-emerald .bg-brand-bg,
+.theme-frosted-amethyst .glass-card,
+.theme-frosted-amethyst .bg-brand-bg,
+.theme-frosted-sunset .glass-card,
+.theme-frosted-sunset .bg-brand-bg,
+.theme-frosted-ocean .glass-card,
+.theme-frosted-ocean .bg-brand-bg,
+.theme-frosted-cyberpunk .glass-card,
+.theme-frosted-cyberpunk .bg-brand-bg,
+.theme-nordic-cold .glass-card,
+.theme-nordic-cold .bg-brand-bg,
+.theme-sweet-pink .glass-card,
+.theme-sweet-pink .bg-brand-bg {
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.theme-frosted-glass select,
+.theme-frosted-glass input[type="text"],
+.theme-frosted-glass input[type="number"],
+.theme-frosted-glass input[type="password"],
+.theme-frosted-glass textarea,
+.theme-frosted-emerald select,
+.theme-frosted-emerald input,
+.theme-frosted-emerald textarea,
+.theme-frosted-amethyst select,
+.theme-frosted-amethyst input,
+.theme-frosted-amethyst textarea,
+.theme-frosted-sunset select,
+.theme-frosted-sunset input,
+.theme-frosted-sunset textarea,
+.theme-frosted-ocean select,
+.theme-frosted-ocean input,
+.theme-frosted-ocean textarea,
+.theme-frosted-cyberpunk select,
+.theme-frosted-cyberpunk input,
+.theme-frosted-cyberpunk textarea,
+.theme-nordic-cold select,
+.theme-nordic-cold input,
+.theme-nordic-cold textarea,
+.theme-sweet-pink select,
+.theme-sweet-pink input,
+.theme-sweet-pink textarea {
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #e2e8f0 !important;
+  transition: all 0.3s ease;
+}
+
+.theme-frosted-glass select option,
+.theme-frosted-emerald select option,
+.theme-frosted-amethyst select option,
+.theme-frosted-sunset select option,
+.theme-frosted-ocean select option,
+.theme-frosted-cyberpunk select option,
+.theme-nordic-cold select option,
+.theme-sweet-pink select option {
+  background-color: #0d0e15 !important;
+  color: #e2e8f0 !important;
+}
+
+.theme-frosted-glass .sidebar-item,
+.theme-frosted-emerald .sidebar-item,
+.theme-frosted-amethyst .sidebar-item,
+.theme-frosted-sunset .sidebar-item,
+.theme-frosted-ocean .sidebar-item,
+.theme-frosted-cyberpunk .sidebar-item,
+.theme-nordic-cold .sidebar-item,
+.theme-sweet-pink .sidebar-item {
+  transition: background 0.2s;
+  cursor: pointer;
+}
+
+.theme-frosted-glass .sidebar-item:hover,
+.theme-frosted-emerald .sidebar-item:hover,
+.theme-frosted-amethyst .sidebar-item:hover,
+.theme-frosted-sunset .sidebar-item:hover,
+.theme-frosted-ocean .sidebar-item:hover,
+.theme-frosted-cyberpunk .sidebar-item:hover,
+.theme-nordic-cold .sidebar-item:hover,
+.theme-sweet-pink .sidebar-item:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.theme-frosted-glass .status-dot,
+.theme-frosted-emerald .status-dot,
+.theme-frosted-amethyst .status-dot,
+.theme-frosted-sunset .status-dot,
+.theme-frosted-ocean .status-dot,
+.theme-frosted-cyberpunk .status-dot,
+.theme-nordic-cold .status-dot,
+.theme-sweet-pink .status-dot {
+  box-shadow: 0 0 10px currentColor;
+}
+
+.theme-frosted-glass ::-webkit-scrollbar-thumb,
+.theme-frosted-emerald ::-webkit-scrollbar-thumb,
+.theme-frosted-amethyst ::-webkit-scrollbar-thumb,
+.theme-frosted-sunset ::-webkit-scrollbar-thumb,
+.theme-frosted-ocean ::-webkit-scrollbar-thumb,
+.theme-frosted-cyberpunk ::-webkit-scrollbar-thumb,
+.theme-nordic-cold ::-webkit-scrollbar-thumb,
+.theme-sweet-pink ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 10px;
+}
+
+/* Animations for Glow Pulse */
+@keyframes neon-pulse {
+  0%, 100% {
+    box-shadow: 0 0 5px var(--brand-shadow), 0 0 10px rgba(0,0,0,0.5);
+  }
+  50% {
+    box-shadow: 0 0 15px var(--brand-shadow), 0 0 25px rgba(0,0,0,0.3);
+  }
+}
+
+.glow-card {
+  animation: neon-pulse 4s infinite ease-in-out;
+}
+
+/* Pattern background overlay */
+.terminal-grid {
+  background-size: 40px 40px;
+  background-image: linear-gradient(to right, rgba(128, 128, 128, 0.03) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(128, 128, 128, 0.03) 1px, transparent 1px);
+}
+
+/* Shake transition for keypad entry errors */
+@keyframes error-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+.animate-shake {
+  animation: error-shake 0.2s 2 ease-in-out;
+}

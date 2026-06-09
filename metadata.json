@@ -1,0 +1,10 @@
+{
+  "name": "JeyNodePad",
+  "description": "An ultra-modern, gamified server management application designed for developers and sysadmins to organize, track, and monitor their servers with multiple themes, English/Farsi support, and backup/restore.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
