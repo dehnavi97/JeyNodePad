@@ -71,7 +71,7 @@ export function LockScreen({ correctPin, lang, onUnlock }: LockScreenProps) {
         </p>
 
         {/* PIN Indicators */}
-        <div className="flex justify-center gap-3 mb-6">
+        <div className="flex justify-center gap-3 mb-6" dir="ltr">
           {[0, 1, 2, 3].map((idx) => {
             const hasVal = enteredPin.length > idx;
             return (
@@ -117,10 +117,10 @@ export function LockScreen({ correctPin, lang, onUnlock }: LockScreenProps) {
           ))}
           
           <button
-            onClick={handleClear}
-            className="w-16 h-16 rounded-full text-xs text-brand-text-muted hover:text-rose-500 flex items-center justify-center transition-colors cursor-pointer"
+            onClick={handleBackspace}
+            className="w-16 h-16 rounded-full text-brand-text-muted hover:text-brand-accent flex items-center justify-center transition-colors cursor-pointer"
           >
-            {lang === 'fa' ? 'پاک‌کردن' : 'Clear'}
+            <ArrowLeft className="w-5 h-5" />
           </button>
 
           <button
@@ -131,11 +131,12 @@ export function LockScreen({ correctPin, lang, onUnlock }: LockScreenProps) {
           </button>
 
           <button
-            onClick={handleBackspace}
-            className="w-16 h-16 rounded-full text-brand-text-muted hover:text-brand-accent flex items-center justify-center transition-colors cursor-pointer"
+            onClick={handleClear}
+            className="w-16 h-16 rounded-full text-xs text-brand-text-muted hover:text-rose-500 flex items-center justify-center transition-colors cursor-pointer"
           >
-            <ArrowLeft className="w-5 h-5" />
+            {lang === 'fa' ? 'پاک‌کردن' : 'Clear'}
           </button>
+          
         </div>
       </motion.div>
     </div>

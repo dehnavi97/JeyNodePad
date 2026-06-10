@@ -191,7 +191,7 @@ const TauriTitleBar = ({ lang }: { lang: 'en' | 'fa' }) => {
 
   return (
     <div 
-      className="h-10 border-b border-brand-border/30 flex items-center justify-between select-none shrink-0 z-50 text-xs font-mono"
+      className="h-10 border-b border-brand-border/30 flex items-center justify-between select-none shrink-0 z-50 text-xs font-mono TopBar"
       style={{ direction: 'ltr', position: 'sticky', top: '1px', zIndex: '9999', background: '#000' }}
     >
       {/* Left side: Logo & Title */}
@@ -961,7 +961,7 @@ export default function App() {
     setRenewals([]);
     setStats(INITIAL_STATS);
     setSettings({
-      theme: 'soft-orange',
+      theme: 'frosted-glass',
       lang: 'fa',
       visibleFields: {
         credentials: true,
@@ -1709,7 +1709,7 @@ export default function App() {
                   {lang === 'fa' ? 'پوسته و تم گرافیکی فعال:' : 'Active Graphical UI Skin:'}
                 </label>
                 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[360px] overflow-y-auto p-2 border border-brand-border/10 rounded-xl bg-black/15">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3  overflow-y-auto p-2 border border-brand-border/10 rounded-xl bg-black/15">
                   {[
                     { id: 'frosted-glass', nameEn: 'Ultra Glass 🌌', nameFa: 'شیشه کهکشانی', bgGrad: 'from-slate-950 via-indigo-950 to-indigo-900', borderC: 'border-indigo-400/50' },
                     { id: 'frosted-emerald', nameEn: 'Emerald Glass 🌿', nameFa: 'شیشه اِمرالد', bgGrad: 'from-slate-950 via-emerald-950 to-emerald-900', borderC: 'border-emerald-500/50' },
@@ -2353,7 +2353,7 @@ export default function App() {
 
         {/* INTERACTIVE SERVER DETAILS POPUP MODAL */}
         {selectedServer && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" dir={lang === 'fa' ? 'rtl' : 'ltr'}>
+          <div className="fixed ForceFixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" dir={lang === 'fa' ? 'rtl' : 'ltr'}>
             <div className="bg-brand-card border border-brand-border rounded-2xl max-w-md w-full p-6 shadow-2xl relative max-h-[85vh] overflow-y-auto space-y-5">
               
               {/* Header */}
@@ -2923,7 +2923,7 @@ export default function App() {
 
       {/* APP HARD RESET CONFIRMATION MODAL */}
       {showResetConfirmModal && (
-        <div className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-md flex items-center justify-center p-4" style={{ direction: lang === 'fa' ? 'rtl' : 'ltr' }}>
+        <div className="fixed fixed2 inset-0 z-[99999] bg-black/85 backdrop-blur-md flex items-center justify-center p-4" style={{ direction: lang === 'fa' ? 'rtl' : 'ltr' }}>
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}

@@ -1,6 +1,6 @@
 export type Language = 'en' | 'fa';
 
-export type Theme = 'soft-orange' | 'neon-dark' | 'cyberpunk' | 'emerald-gate' | 'sunset-pulse' | 'royal-classic' | 'frosted-glass' | 'frosted-emerald' | 'frosted-amethyst' | 'frosted-sunset' | 'frosted-ocean' | 'frosted-cyberpunk' | 'nordic-cold' | 'sweet-pink';
+export type Theme = 'frosted-glass' | 'soft-orange' | 'neon-dark' | 'cyberpunk' | 'emerald-gate' | 'sunset-pulse' | 'royal-classic' | 'frosted-emerald' | 'frosted-amethyst' | 'frosted-sunset' | 'frosted-ocean' | 'frosted-cyberpunk' | 'nordic-cold' | 'sweet-pink';
 
 export type Currency = 'USD' | 'EUR' | 'TOMAN';
 

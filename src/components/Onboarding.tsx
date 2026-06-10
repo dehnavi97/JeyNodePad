@@ -84,12 +84,12 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   };
 
   return (
-    <div className={`w-full flex-1 overflow-y-auto terminal-grid bg-transparent flex items-center justify-center p-4 transition-all duration-300 theme-${theme}`} dir={lang === 'fa' ? 'rtl' : 'ltr'}>
+    <div className={`w-full flex-1 overflow-y-auto terminal-grid bg-transparent flex justify-center p-4 transition-all duration-300 theme-${theme}`} dir={lang === 'fa' ? 'rtl' : 'ltr'}>
       <motion.div 
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="w-full max-w-2xl bg-brand-card/90 border border-brand-border/80 rounded-2xl p-6 sm:p-8 backdrop-blur-xl glow-card relative overflow-hidden"
+        className="w-full overflow-y-auto max-w-2xl bg-brand-card/90 border border-brand-border/80 rounded-2xl p-6 sm:p-8 backdrop-blur-xl glow-card relative overflow-hidden"
       >
         {/* Glow decoration */}
         <div className="absolute -top-24 -left-24 w-48 h-48 bg-brand-accent/20 rounded-full blur-3xl pointer-events-none"></div>
@@ -202,6 +202,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               className="mt-4 pt-3 border-t border-brand-border/30 grid grid-cols-2 gap-4"
+              dir="ltr"
             >
               <div>
                 <label className="text-[10px] text-brand-text-muted">

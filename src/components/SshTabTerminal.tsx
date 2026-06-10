@@ -1038,7 +1038,7 @@ export function SshTabTerminal({ server, lang, initialCommand, initialCommandNam
       </div>
 
       {/* CORE DISPLAY WINDOW */}
-      <div className="flex-1 p-5 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-brand-border text-left select-text h-[400px]">
+      <div className="flex-1 p-5 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-brand-border text-left select-text h-[400px] sshBox">
         {nanoState ? (
           /* NANO TEXT EDITOR VIEW */
           <div className="flex-1 flex flex-col h-full bg-[#02070a] text-white p-3 font-mono text-xs rounded-xl border border-white/10" onClick={(e) => e.stopPropagation()}>
@@ -1206,7 +1206,7 @@ export function SshTabTerminal({ server, lang, initialCommand, initialCommandNam
 
       {contextMenu && (
         <div 
-          className="fixed z-50 bg-slate-900/95 border border-brand-border/60 rounded-xl shadow-2xl py-1.5 min-w-[200px] backdrop-blur-md glow-card text-left font-sans text-xs text-white"
+          className="fixed ForceFixed z-50 bg-slate-900/95 border border-brand-border/60 rounded-xl shadow-2xl py-1.5 min-w-[200px] backdrop-blur-md glow-card text-left font-sans text-xs text-white"
           style={{ 
             top: `${contextMenu.y}px`, 
             left: `${contextMenu.x}px`,
