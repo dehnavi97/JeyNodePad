@@ -60,4 +60,5 @@ jobs:
           releaseBody: 'See the assets to download this version.'
           releaseDraft: true # ابتدا به صورت Draft ذخیره می‌شود تا خودتان تایید و Publish کنید
           prerelease: false
+          includeNpmScript: false
           args: ${{ matrix.args }}
