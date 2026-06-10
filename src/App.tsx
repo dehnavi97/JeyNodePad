@@ -659,6 +659,25 @@ export default function App() {
       [serverId]: { status: 'loading' }
     }));
 
+    if (isTauri) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const ms = await invoke<number>('ping_server', { ip });
+        setServerPings(prev => ({
+          ...prev,
+          [serverId]: { status: 'success', ms }
+        }));
+        return;
+      } catch (err) {
+        console.error("Ping error:", err);
+        setServerPings(prev => ({
+          ...prev,
+          [serverId]: { status: 'error' }
+        }));
+        return;
+      }
+    }
+
     // Simulating packet travel delay (250ms - 750ms)
     const simulatedDelay = 250 + Math.random() * 500;
     await new Promise(resolve => setTimeout(resolve, simulatedDelay));
