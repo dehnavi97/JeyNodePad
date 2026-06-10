@@ -3,7 +3,7 @@ name: 'Publish Release'
 on:
   push:
     tags:
-      - 'v*' # زمانی که تگی مثل v1.0.0 پاش شود، این ورک‌فلو اجرا می‌شود
+      - 'v*' # با زدن تگ‌هایی مثل v2.1.0 به صورت خودکار اجرا می‌شود
 
 jobs:
   publish-tauri:
@@ -13,46 +13,68 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macos-latest' # برای خروجی مک (.dmg, .app)
-            args: ''
-          - platform: 'ubuntu-22.04' # برای خروجی لینوکس (.deb, .appimage)
-            args: ''
-          - platform: 'windows-latest' # برای خروجی ویندوز (.msi, .exe)
-            args: ''
+          - platform: 'windows-latest'
+            args: '--target x86_64-pc-windows-msvc'
+            friendly_name: 'JeyNodePad-Windows-x64'
+
+          - platform: 'windows-latest'
+            args: '--target i686-pc-windows-msvc'
+            friendly_name: 'JeyNodePad-Windows-x86-32bit'
+
+          - platform: 'macos-latest'
+            args: '--target aarch64-apple-darwin'
+            friendly_name: 'JeyNodePad-Mac-Silicon-M1-M2-M3'
+
+          - platform: 'macos-latest'
+            args: '--target x86_64-apple-darwin'
+            friendly_name: 'JeyNodePad-Mac-Intel'
+
+          - platform: 'ubuntu-22.04'
+            args: '--target x86_64-unknown-linux-gnu'
+            friendly_name: 'JeyNodePad-Linux-x64'
 
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
 
-      # نصب Node.js و پکیج منیجر (در اینجا pnpm فرض شده، اگر npm یا yarn دارید تغییر دهید)
+      # ۱. تنظیم محیط Node.js با نسخه پایدار ۲۲
       - name: setup node
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      # نصب Rust (چون توری با راست نوشته شده)
+      # ۲. نصب راست متناسب با تارگت‌های مشخص شده در ماتریس بالا
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          # ابزار لینوکس برای Tauri v2 (اگر از v1 استفاده میکنید باز هم سازگار است)
-          targets: ${{ matrix.platform == 'ubuntu-22.04' && 'x86_64-unknown-linux-gnu' || '' }}
+          targets: ${{ matrix.args && contains(matrix.args, '--target') && format('{0}', json(matrix.args)) || '' }}
 
-      # پیش‌نیازهای ضروری برای سیستم‌عامل لینوکس
+      # ۳. نصب پیش‌نیازهای لینوکس (فقط روی اوبونتو اجرا می‌شود)
       - name: install dependencies (ubuntu only)
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
 
-      # نصب وابستگی‌های فرانت‌اند (Vite)
-      # اگر از npm استفاده می‌کنید: npm ci و برای yarn: yarn install
+      # ۴. فعال‌سازی و نصب پکیج‌ها با pnpm (جهت دور زدن باگ قفل شدن npm ویندوز)
       - name: install frontend dependencies
         run: |
           corepack enable
           corepack prepare pnpm@9.15.4 --activate
           pnpm install
 
-      # ساخت و انتشار خودکار در گیت‌هاب
+      # ۵. تزریق داینامیک نام اختصاصی به فایل کانفیگ توری قبل از شروع بیلد
+      - name: Update App Name for Platform
+        shell: bash
+        run: |
+          node -e "
+            const fs = require('fs');
+            const config = JSON.parse(fs.readFileSync('src-tauri/tauri.conf.json', 'utf8'));
+            config.productName = '${{ matrix.friendly_name }}';
+            fs.writeFileSync('src-tauri/tauri.conf.json', JSON.stringify(config, null, 2));
+          "
+
+      # ۶. بیلد نهایی و آپلود خودکار در بخش Releases گیت‌هاب
       - name: Build and Publish
         uses: tauri-apps/tauri-action@v0
         env:
@@ -60,8 +82,7 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'App ${{ github.ref_name }}'
-          releaseBody: 'See the assets to download this version.'
-          releaseDraft: true # ابتدا به صورت Draft ذخیره می‌شود تا خودتان تایید و Publish کنید
+          releaseBody: 'تغییرات این نسخه را در فایل‌های زیر دانلود کنید.'
+          releaseDraft: true # به صورت درافت ذخیره می‌شود تا ابتدا ظاهر فایل‌ها را چک کنید و سپس منتشر کنید
           prerelease: false
-          includeNpmScript: false
           args: ${{ matrix.args }}
