@@ -108,6 +108,7 @@ export interface AppSettings {
     provider: boolean;
   };
   security: SecurityConfig;
+  enableFinance?: boolean;
 }
 
 export interface AppBackup {

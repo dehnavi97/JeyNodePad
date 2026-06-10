@@ -48,6 +48,7 @@ import { Portal } from 'react-dom'; // we can use simple inline layouts for clea
 import { ProviderCard } from './components/ProviderCard';
 import { StatsGamification } from './components/StatsGamification';
 import { DeveloperAbout } from './components/DeveloperAbout';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 
 // Lucide Icons Import
 import { 
@@ -135,11 +136,11 @@ const TauriTitleBar = ({ lang }: { lang: 'en' | 'fa' }) => {
   const [isMaximized, setIsMaximized] = useState(false);
 
   useEffect(() => {
-    if (!isTauri) return;
+    
     
     const checkMaximized = async () => {
       try {
-        const win = (window as any).__TAURI__.window.getCurrentWindow();
+        const win = getCurrentWindow();
         if (win && typeof win.isMaximized === 'function') {
           const max = await win.isMaximized();
           setIsMaximized(max);
@@ -154,11 +155,11 @@ const TauriTitleBar = ({ lang }: { lang: 'en' | 'fa' }) => {
     return () => clearInterval(interval);
   }, []);
 
-  if (!isTauri) return null;
+  
 
   const handleMinimize = async () => {
     try {
-      const win = (window as any).__TAURI__.window.getCurrentWindow();
+      const win = getCurrentWindow();
       await win.minimize();
     } catch (err) {
       console.error("Minimize error:", err);
@@ -167,7 +168,7 @@ const TauriTitleBar = ({ lang }: { lang: 'en' | 'fa' }) => {
 
   const handleMaximize = async () => {
     try {
-      const win = (window as any).__TAURI__.window.getCurrentWindow();
+      const win = getCurrentWindow();
       await win.toggleMaximize();
       const max = await win.isMaximized();
       setIsMaximized(max);
@@ -178,7 +179,7 @@ const TauriTitleBar = ({ lang }: { lang: 'en' | 'fa' }) => {
 
   const handleClose = async () => {
     try {
-      const win = (window as any).__TAURI__.window.getCurrentWindow();
+      const win = getCurrentWindow();
       await win.close();
     } catch (err) {
       console.error("Close error:", err);
@@ -187,8 +188,8 @@ const TauriTitleBar = ({ lang }: { lang: 'en' | 'fa' }) => {
 
   return (
     <div 
-      className="h-10 bg-brand-card border-b border-brand-border/30 flex items-center justify-between select-none shrink-0 z-50 text-xs font-mono"
-      style={{ direction: 'ltr' }}
+      className="h-10 border-b border-brand-border/30 flex items-center justify-between select-none shrink-0 z-50 text-xs font-mono"
+      style={{ direction: 'ltr', position: 'sticky', top: '1px', zIndex: '9999', background: '#000' }}
     >
       {/* Left side: Logo & Title */}
       <div className="flex items-center gap-2 pl-3 pointer-events-none select-none">
@@ -212,7 +213,7 @@ const TauriTitleBar = ({ lang }: { lang: 'en' | 'fa' }) => {
       <div className="flex items-center h-full">
         {/* Minimize */}
         <button
-          onClick={handleMinimize}
+          onClick={()=>{handleMinimize()}}
           className="w-11 h-full flex items-center justify-center text-brand-text-muted hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
           title="Minimize"
         >
@@ -422,6 +423,13 @@ export default function App() {
   useEffect(() => {
     saveState('jey_quests', quests);
   }, [quests]);
+
+  // Adjust active tab if billing panel is disabled
+  useEffect(() => {
+    if (!settings.enableFinance && activeTab === 'accounting') {
+      setActiveTab('nodes');
+    }
+  }, [settings.enableFinance, activeTab]);
 
   // Handle Onboarding Completion
   const handleOnboardComplete = (pLang: 'en' | 'fa', pTheme: string, pinCode?: string) => {
@@ -956,16 +964,24 @@ export default function App() {
   ).length;
 
   if (!isOnboarded) {
-    return <Onboarding onComplete={handleOnboardComplete} />;
+    return (
+      <div className={`fixed inset-0 z-50 bg-brand-bg text-brand-text transition-colors duration-300 theme-${settings.theme} flex flex-col`} style={{ direction: lang === 'fa' ? 'rtl' : 'ltr' }}>
+        <TauriTitleBar lang={lang} />
+        <Onboarding onComplete={handleOnboardComplete} />
+      </div>
+    );
   }
 
   if (isSecureLocked && settings.security.pinCode) {
     return (
-      <LockScreen 
-        correctPin={settings.security.pinCode} 
-        lang={lang} 
-        onUnlock={handleUnlock} 
-      />
+      <div className={`fixed inset-0 z-50 bg-brand-bg text-brand-text transition-colors duration-300 theme-${settings.theme} flex flex-col`} style={{ direction: lang === 'fa' ? 'rtl' : 'ltr' }}>
+        <TauriTitleBar lang={lang} />
+        <LockScreen 
+          correctPin={settings.security.pinCode} 
+          lang={lang} 
+          onUnlock={handleUnlock} 
+        />
+      </div>
     );
   }
 
@@ -1040,31 +1056,33 @@ export default function App() {
             </button>
 
             {/* 2. Wallets / Accounting Tab */}
-            <button
-               onClick={() => { setActiveTab('accounting'); }}
-               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all font-mono font-semibold text-xs cursor-pointer relative group ${
-                 activeTab === 'accounting'
-                   ? 'bg-gradient-to-r from-brand-accent/20 to-brand-accent/10 border border-brand-accent/30 text-white shadow-md'
-                   : 'text-brand-text-muted hover:text-brand-text hover:bg-brand-accent/10 border border-transparent'
-               }`}
-            >
-               <div className="flex items-center gap-3 w-full font-mono">
-                 <Coins className={`w-4.5 h-4.5 shrink-0 transition-transform group-hover:scale-110 ${activeTab === 'accounting' ? 'text-brand-accent' : ''}`} />
-                 {!isSidebarCollapsed && <span className="truncate">{t.providers}</span>}
-                 {!isSidebarCollapsed && (
-                   <span className={`ml-auto shrink-0 text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
-                     activeTab === 'accounting' ? 'bg-brand-accent/30 text-white' : 'bg-brand-bg/60 text-brand-text-muted border border-brand-border/30'
-                   }`}>
-                     {providers.length}
-                   </span>
+            {settings.enableFinance && (
+              <button
+                 onClick={() => { setActiveTab('accounting'); }}
+                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all font-mono font-semibold text-xs cursor-pointer relative group ${
+                   activeTab === 'accounting'
+                     ? 'bg-gradient-to-r from-brand-accent/20 to-brand-accent/10 border border-brand-accent/30 text-white shadow-md'
+                     : 'text-brand-text-muted hover:text-brand-text hover:bg-brand-accent/10 border border-transparent'
+                 }`}
+              >
+                 <div className="flex items-center gap-3 w-full font-mono">
+                   <Coins className={`w-4.5 h-4.5 shrink-0 transition-transform group-hover:scale-110 ${activeTab === 'accounting' ? 'text-brand-accent' : ''}`} />
+                   {!isSidebarCollapsed && <span className="truncate">{t.providers}</span>}
+                   {!isSidebarCollapsed && (
+                     <span className={`ml-auto shrink-0 text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
+                       activeTab === 'accounting' ? 'bg-brand-accent/30 text-white' : 'bg-brand-bg/60 text-brand-text-muted border border-brand-border/30'
+                     }`}>
+                       {providers.length}
+                     </span>
+                   )}
+                 </div>
+ 
+                 {/* Vertical side active indicator bar */}
+                 {activeTab === 'accounting' && (
+                   <div className={`absolute top-2 bottom-2 w-1 rounded-full bg-brand-accent ${lang === 'fa' ? 'left-1' : 'right-1'}`} />
                  )}
-               </div>
-
-               {/* Vertical side active indicator bar */}
-               {activeTab === 'accounting' && (
-                 <div className={`absolute top-2 bottom-2 w-1 rounded-full bg-brand-accent ${lang === 'fa' ? 'left-1' : 'right-1'}`} />
-               )}
-            </button>
+              </button>
+            )}
 
             {/* 4. Linux Commands Link */}
             <a
@@ -1602,421 +1620,512 @@ export default function App() {
           </div>
         )}
 
-
-
         {/* TAB 5: SYSTEM CONFIGS SETTINGS OFFICE */}
         {activeTab === 'settings' && (
-          <div className="max-w-4xl mx-auto space-y-6">
+          <div className="max-w-3xl mx-auto space-y-8 animate-fade-in pb-12 text-xs text-brand-text-muted" dir={lang === 'fa' ? 'rtl' : 'ltr'}>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-brand-text-muted">
-              
-              {/* Box 1: UI Styles, languages, skins */}
-              <div className="bg-brand-card border border-brand-border rounded-xl p-5 space-y-5">
-                <h3 className="text-sm font-bold text-white font-mono flex items-center gap-1.5 border-b border-brand-border/30 pb-2">
-                  <span>🌐 {lang === 'fa' ? 'پوسته و زبان مانیتور' : 'Skins & Interface Control'}</span>
-                </h3>
+            {/* Elegant Header section */}
+            <div className="flex items-center gap-4 border-b border-brand-border/30 pb-4">
+              <div className="p-3 rounded-2xl bg-brand-accent/15 border border-brand-accent/30 text-brand-accent">
+                <SettingsIcon className="w-6 h-6 animate-spin-slow" />
+              </div>
+              <div className="flex-1 ltr:text-left rtl:text-right">
+                <h2 className="text-base font-black text-white leading-tight font-mono">
+                  {lang === 'fa' ? 'مکانیزم پایگاه تنظیمات سیستم' : 'Console System Configurations'}
+                </h2>
+                <p className="text-[11px] text-brand-text-muted mt-1">
+                  {lang === 'fa' ? 'پوسته‌ها، نگهداری رمز، برچسب‌ها، فیلترهای اصلی و پشتیبان‌گیری مانیتور گره‌ها' : 'Frosted skins, vault protection key, system tags, visible column toggles, and database storage archives'}
+                </p>
+              </div>
+            </div>
 
-                {/* Skin presets option selection elements */}
-                <div className="space-y-2">
-                  <label className="block text-[10px] text-brand-text-muted uppercase tracking-wider font-bold">
-                    {lang === 'fa' ? 'پوسته و تم گرافیکی فعال:' : 'Active Graphical UI Skin:'}
-                  </label>
-                  
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-2 max-h-[340px] overflow-y-auto p-1.5 border border-brand-border/10 rounded-xl bg-black/10">
-                    {[
-                      { id: 'frosted-glass', nameEn: 'Ultra Glass 🌌', nameFa: 'شیشه کهکشانی', bgGrad: 'from-slate-950 via-indigo-950 to-indigo-900', borderC: 'border-indigo-400/50' },
-                      { id: 'frosted-emerald', nameEn: 'Emerald Glass 🌿', nameFa: 'شیشه اِمرالد', bgGrad: 'from-slate-950 via-emerald-950 to-emerald-900', borderC: 'border-emerald-500/50' },
-                      { id: 'frosted-amethyst', nameEn: 'Amethyst Glass 🔮', nameFa: 'شیشه بنفش رویال', bgGrad: 'from-slate-950 via-purple-950 to-purple-900', borderC: 'border-purple-400/50' },
-                      { id: 'frosted-sunset', nameEn: 'Sunset Glass 🌅', nameFa: 'شیشه شفق پاییز', bgGrad: 'from-slate-950 via-orange-950 to-red-950', borderC: 'border-orange-500/50' },
-                      { id: 'frosted-ocean', nameEn: 'Ocean Glass 🌊', nameFa: 'شیشه سافایر', bgGrad: 'from-slate-950 via-blue-950 to-sky-950', borderC: 'border-sky-400/50' },
-                      { id: 'frosted-cyberpunk', nameEn: 'Neon Glass ⚡', nameFa: 'شیشه سایبرپانک', bgGrad: 'from-slate-950 via-fuchsia-950 to-pink-950', borderC: 'border-pink-500/50' },
-                      { id: 'sweet-pink', nameEn: 'Sweet Rose 🎀', nameFa: 'شیشه صورتی', bgGrad: 'from-slate-950 via-rose-950 to-purple-950', borderC: 'border-rose-400/50' },
-                      { id: 'nordic-cold', nameEn: 'Nordic Silver ❄️', nameFa: 'شیشه یخ قطبی', bgGrad: 'from-slate-950 via-slate-900 to-slate-800', borderC: 'border-slate-300/50' },
-                      { id: 'soft-orange', nameEn: 'Paper Orange 📄', nameFa: 'نارنجی کاغذی', bgGrad: 'from-white to-orange-50', borderC: 'border-orange-400' },
-                      { id: 'neon-dark', nameEn: 'Laser Violet 👾', nameFa: 'بنفش الکترونیکی', bgGrad: 'from-[#070913] to-[#0f1325]', borderC: 'border-indigo-500' },
-                      { id: 'cyberpunk', nameEn: 'Classic Cyber ☣️', nameFa: 'سایبرپانک کلاسیک', bgGrad: 'from-[#0d0714] to-[#180924]', borderC: 'border-yellow-500' },
-                      { id: 'emerald-gate', nameEn: 'Emerald Gate 🔐', nameFa: 'زمرد سبز کلاسیک', bgGrad: 'from-[#050d0b] to-[#0c1a16]', borderC: 'border-emerald-500' },
-                      { id: 'sunset-pulse', nameEn: 'Volcanic Glow 🌋', nameFa: 'سولار کلاسیک', bgGrad: 'from-[#120909] to-[#1f1111]', borderC: 'border-orange-600' },
-                      { id: 'royal-classic', nameEn: 'Crown Museum 👑', nameFa: 'کلاسیک سلطنتی', bgGrad: 'from-[#070b12] to-[#0d1527]', borderC: 'border-amber-600' },
-                    ].map((themeOpt) => {
-                      const isActive = settings.theme === themeOpt.id;
-                      return (
-                        <button
-                          key={themeOpt.id}
-                          type="button"
-                          onClick={() => setSettings(prev => ({ ...prev, theme: themeOpt.id as any }))}
-                          className={`group relative overflow-hidden p-2 rounded-xl border text-left transition-all duration-300 transform active:scale-95 cursor-pointer flex flex-col justify-between h-20 ${
-                            isActive 
-                              ? 'border-brand-accent bg-brand-accent/15 shadow-lg ring-1 ring-brand-accent' 
-                              : 'border-brand-border/40 bg-brand-card/50 hover:border-brand-accent/55 hover:bg-brand-accent/5'
-                          }`}
-                        >
-                          {/* Colored Background gradient bubble inside card to resemble theme */}
-                          <div className={`absolute top-0 right-0 w-12 h-12 rounded-bl-full bg-gradient-to-br ${themeOpt.bgGrad} opacity-35 transition-transform duration-300 group-hover:scale-110 pointer-events-none`} />
-                          
-                          <div className="flex items-center justify-between w-full relative z-10">
-                            {/* Accent Dot/Indicator */}
-                            <div className={`w-3 h-3 rounded-full bg-gradient-to-tr ${themeOpt.bgGrad} border ${themeOpt.borderC} shadow-sm shrink-0`} />
-                            {isActive && (
-                              <Check className="w-3.5 h-3.5 text-brand-accent shrink-0 animate-pulse" />
-                            )}
-                          </div>
-                          
-                          <div className="mt-2 relative z-10 w-full text-right ltr:text-left">
-                            <div className="text-[10px] font-bold text-white font-mono leading-tight truncate">
-                              {lang === 'fa' ? themeOpt.nameFa : themeOpt.nameEn}
-                            </div>
-                            <div className="text-[8px] text-brand-text-muted leading-none font-mono mt-0.5 truncate uppercase">
-                              {themeOpt.id}
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+            {/* SECTIONS LIST - ALL STACKED VERTICALLY IN ONE COLUMN */}
 
-                {/* Premium Interactive Language Selector Buttons */}
-                <div className="space-y-2">
-                  <label className="block text-[10px] text-brand-text-muted uppercase tracking-wider font-bold">
-                    {lang === 'fa' ? 'انتخاب زبان فعال مانیتور:' : 'Active System Language:'}
-                  </label>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    {/* Persian (FA) Toggle card */}
-                    <button
-                      type="button"
-                      onClick={() => setSettings(prev => ({ ...prev, lang: 'fa' }))}
-                      className={`relative flex items-center gap-3 p-3 rounded-xl border text-right transition-all duration-300 transform active:scale-95 cursor-pointer ${
-                        settings.lang === 'fa'
-                          ? 'border-brand-accent bg-brand-accent/10 shadow-md ring-1 ring-brand-accent'
-                          : 'border-brand-border/40 bg-brand-card/40 hover:border-brand-accent/50 hover:bg-brand-accent/5'
-                      }`}
-                    >
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center bg-black/20 text-md shrink-0 border border-brand-border/20 shadow-inner">
-                        🇮🇷
-                      </div>
-                      <div className="flex-grow text-right">
-                        <div className="text-[11px] font-extrabold text-white">فارسی</div>
-                        <div className="text-[8px] text-brand-text-muted font-mono leading-none mt-0.5">Persian RTL</div>
-                      </div>
-                      {settings.lang === 'fa' && (
-                        <Check className="w-4 h-4 text-brand-accent shrink-0" />
-                      )}
-                    </button>
-
-                    {/* English (EN) Toggle card */}
-                    <button
-                      type="button"
-                      onClick={() => setSettings(prev => ({ ...prev, lang: 'en' }))}
-                      className={`relative flex items-center gap-3 p-3 rounded-xl border text-left transition-all duration-300 transform active:scale-95 cursor-pointer ${
-                        settings.lang === 'en'
-                          ? 'border-brand-accent bg-brand-accent/10 shadow-md ring-1 ring-brand-accent'
-                          : 'border-brand-border/40 bg-brand-card/40 hover:border-brand-accent/50 hover:bg-brand-accent/5'
-                      }`}
-                    >
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center bg-black/20 text-md shrink-0 border border-brand-border/20 shadow-inner">
-                        🇬🇧
-                      </div>
-                      <div className="flex-grow text-left">
-                        <div className="text-[11px] font-extrabold text-white">English</div>
-                        <div className="text-[8px] text-brand-text-muted font-mono leading-none mt-0.5">UK / US LTR</div>
-                      </div>
-                      {settings.lang === 'en' && (
-                        <Check className="w-4 h-4 text-brand-accent shrink-0" />
-                      )}
-                    </button>
-                  </div>
+            {/* Section 1: Themes and Language */}
+            <section className="bg-brand-card/75 border border-brand-border/40 hover:border-brand-border/80 transition-colors rounded-2xl p-6 space-y-6">
+              <div className="flex items-center gap-3 border-b border-brand-border/20 pb-3.5 ltr:text-left rtl:text-right">
+                <span className="text-xl text-brand-accent">🎨</span>
+                <div>
+                  <h3 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                    {lang === 'fa' ? 'شخصی‌سازی ظاهر و زبان سیستم' : 'Visual Identity & System Language'}
+                  </h3>
+                  <p className="text-[10px] text-brand-text-muted mt-0.5">
+                    {lang === 'fa' ? 'زبان مانیتور و پوسته شیشه‌ای کهکشانی دلخواه خود را تعیین کنید' : 'Pick the display language and graphical theme option below'}
+                  </p>
                 </div>
               </div>
 
-              {/* Box 2: Vault lock code setup (PIN) */}
-              <div className="bg-brand-card border border-brand-border rounded-2xl p-5 space-y-4">
-                <h3 className="text-sm font-bold text-white font-mono flex items-center gap-1.5 border-b border-brand-border/40 pb-2">
-                  <span>🔒 {lang === 'fa' ? 'گاوصندوق حفاظتی رمز عبور عددی' : 'Vault Passcode Cryptographic Lock'}</span>
-                </h3>
-
-                {settings.security.pinCode ? (
-                  <div className="space-y-3">
-                    <div className="p-2.5 bg-brand-accent/5 border border-brand-accent/30 text-brand-accent rounded-lg font-mono">
-                      🔒 {lang === 'fa' ? 'سپر امنیتی در حال حاضر فعال است و گواهی‌ها محافظت می‌شوند.' : 'Cryptographic lock shield is fully active.'}
-                    </div>
-
-                    <button
-                      onClick={handleDisableLock}
-                      className="w-full py-2 bg-rose-500/15 border border-rose-500 hover:bg-rose-500 hover:text-white text-rose-400 font-bold rounded-lg transition-all text-xs cursor-pointer"
-                    >
-                      {t.disableLock}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <p className="text-[10.5px] leading-relaxed text-brand-text-muted">
-                      {lang === 'fa' 
-                        ? 'یک رمز عبور ۴ رقمی عددی تنظیم نمایید تا تمام اطلاعات عبور سرورها و IPها در برابر غریبه‌ها ایمن باشد.' 
-                        : 'Deploy a mathematical 4-digit code to shield the workspace.'}
-                    </p>
-
-                    {!pinSetupMode ? (
+              {/* Skin presets */}
+              <div className="space-y-3">
+                <label className="block text-[11px] text-brand-text font-bold ltr:text-left rtl:text-right">
+                  {lang === 'fa' ? 'پوسته و تم گرافیکی فعال:' : 'Active Graphical UI Skin:'}
+                </label>
+                
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[360px] overflow-y-auto p-2 border border-brand-border/10 rounded-xl bg-black/15">
+                  {[
+                    { id: 'frosted-glass', nameEn: 'Ultra Glass 🌌', nameFa: 'شیشه کهکشانی', bgGrad: 'from-slate-950 via-indigo-950 to-indigo-900', borderC: 'border-indigo-400/50' },
+                    { id: 'frosted-emerald', nameEn: 'Emerald Glass 🌿', nameFa: 'شیشه اِمرالد', bgGrad: 'from-slate-950 via-emerald-950 to-emerald-900', borderC: 'border-emerald-500/50' },
+                    { id: 'frosted-amethyst', nameEn: 'Amethyst Glass 🔮', nameFa: 'شیشه بنفش رویال', bgGrad: 'from-slate-950 via-purple-950 to-purple-900', borderC: 'border-purple-400/50' },
+                    { id: 'frosted-sunset', nameEn: 'Sunset Glass 🌅', nameFa: 'شیشه شفق پاییز', bgGrad: 'from-slate-950 via-orange-950 to-red-950', borderC: 'border-orange-500/50' },
+                    { id: 'frosted-ocean', nameEn: 'Ocean Glass 🌊', nameFa: 'شیشه سافایر', bgGrad: 'from-slate-950 via-blue-950 to-sky-950', borderC: 'border-sky-400/50' },
+                    { id: 'frosted-cyberpunk', nameEn: 'Neon Glass ⚡', nameFa: 'شیشه سایبرپانک', bgGrad: 'from-slate-950 via-fuchsia-950 to-pink-950', borderC: 'border-pink-500/50' },
+                    { id: 'sweet-pink', nameEn: 'Sweet Rose 🎀', nameFa: 'شیشه صورتی', bgGrad: 'from-slate-950 via-rose-950 to-purple-950', borderC: 'border-rose-400/50' },
+                    { id: 'nordic-cold', nameEn: 'Nordic Silver ❄️', nameFa: 'شیشه یخ قطبی', bgGrad: 'from-slate-950 via-slate-900 to-slate-800', borderC: 'border-slate-300/50' },
+                    { id: 'soft-orange', nameEn: 'Paper Orange 📄', nameFa: 'نارنجی کاغذی', bgGrad: 'from-white to-orange-50', borderC: 'border-orange-400' },
+                    { id: 'neon-dark', nameEn: 'Laser Violet 👾', nameFa: 'بنفش الکترونیکی', bgGrad: 'from-[#070913] to-[#0f1325]', borderC: 'border-indigo-500' },
+                    { id: 'cyberpunk', nameEn: 'Classic Cyber ☣️', nameFa: 'سایبرپانک کلاسیک', bgGrad: 'from-[#0d0714] to-[#180924]', borderC: 'border-yellow-500' },
+                    { id: 'emerald-gate', nameEn: 'Emerald Gate 🔐', nameFa: 'زمرد سبز کلاسیک', bgGrad: 'from-[#050d0b] to-[#0c1a16]', borderC: 'border-emerald-500' },
+                    { id: 'sunset-pulse', nameEn: 'Volcanic Glow 🌋', nameFa: 'سولار کلاسیک', bgGrad: 'from-[#120909] to-[#1f1111]', borderC: 'border-orange-600' },
+                    { id: 'royal-classic', nameEn: 'Crown Museum 👑', nameFa: 'کلاسیک سلطنتی', bgGrad: 'from-[#070b12] to-[#0d1527]', borderC: 'border-amber-600' },
+                  ].map((themeOpt) => {
+                    const isActive = settings.theme === themeOpt.id;
+                    return (
                       <button
-                        onClick={handleTogglePINSetup}
-                        className="w-full py-2 bg-brand-accent text-brand-bg font-bold rounded-lg text-xs hover:bg-brand-accent/90 cursor-pointer"
+                        key={themeOpt.id}
+                        type="button"
+                        onClick={() => setSettings(prev => ({ ...prev, theme: themeOpt.id as any }))}
+                        className={`group relative overflow-hidden p-2.5 rounded-xl border text-left transition-all duration-300 transform active:scale-95 cursor-pointer flex flex-col justify-between h-20 ${
+                          isActive 
+                            ? 'border-brand-accent bg-brand-accent/15 shadow-lg ring-1 ring-brand-accent' 
+                            : 'border-brand-border/40 bg-brand-card/50 hover:border-brand-accent/55 hover:bg-brand-accent/5'
+                        }`}
                       >
-                        {lang === 'fa' ? 'تنظیم رمز عددی' : 'Set entry passcode PIN'}
-                      </button>
-                    ) : (
-                      <div className="space-y-2 pt-2 border-t border-brand-border/30">
-                        <label className="block text-[10px] text-brand-text-muted uppercase font-bold">{t.confirmPinLock}</label>
-                        <input
-                          type="password"
-                          maxLength={4}
-                          value={newPINCode}
-                          onChange={(e) => {
-                            setPinSetupError('');
-                            setNewPINCode(e.target.value.replace(/\D/g, ''));
-                          }}
-                          placeholder="e.g. 1365"
-                          className="w-full bg-brand-bg border border-brand-border text-center text-sm p-2 rounded text-white focus:outline-none focus:border-brand-accent font-mono"
-                        />
-                        {pinSetupError && <span className="text-[10px] text-rose-500 block">⚠ {pinSetupError}</span>}
+                        <div className={`absolute top-0 right-0 w-12 h-12 rounded-bl-full bg-gradient-to-br ${themeOpt.bgGrad} opacity-35 transition-transform duration-300 group-hover:scale-110 pointer-events-none`} />
                         
-                        <div className="grid grid-cols-2 gap-2 mt-1">
-                          <button
-                            type="button"
-                            onClick={handleTogglePINSetup}
-                            className="p-1 px-3 bg-brand-bg border border-brand-border rounded text-[10px] text-white hover:bg-black/30 cursor-pointer"
-                          >
-                            {t.cancel}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleApplyLock}
-                            className="p-1 px-3 bg-brand-accent text-brand-bg rounded font-bold text-[10px] cursor-pointer"
-                          >
-                            {lang === 'fa' ? 'تایید و قفل' : 'Apply Shield'}
-                          </button>
+                        <div className="flex items-center justify-between w-full relative z-10">
+                          <div className={`w-3 h-3 rounded-full bg-gradient-to-tr ${themeOpt.bgGrad} border ${themeOpt.borderC} shadow-sm shrink-0`} />
+                          {isActive && (
+                            <Check className="w-3.5 h-3.5 text-brand-accent shrink-0" />
+                          )}
                         </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                        
+                        <div className="mt-2 relative z-10 w-full text-right ltr:text-left">
+                          <div className="text-[10px] font-bold text-white font-mono leading-tight truncate">
+                            {lang === 'fa' ? themeOpt.nameFa : themeOpt.nameEn}
+                          </div>
+                          <div className="text-[8px] text-brand-text-muted leading-none font-mono mt-0.5 truncate uppercase">
+                            {themeOpt.id}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              {/* Box 3: Custom Node tags creator panel */}
-              <div className="bg-brand-card border border-brand-border rounded-2xl p-5 space-y-4">
-                <h3 className="text-sm font-bold text-white font-mono flex items-center gap-1.5 border-b border-brand-border/40 pb-2">
-                  <span>🏷 {t.manageTags}</span>
-                </h3>
+              {/* Language toggler */}
+              <div className="space-y-3 pt-5 border-t border-brand-border/20">
+                <label className="block text-[11px] text-brand-text font-bold ltr:text-left rtl:text-right">
+                  {lang === 'fa' ? 'انتخاب زبان فعال مانیتور:' : 'Active System Language:'}
+                </label>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setSettings(prev => ({ ...prev, lang: 'fa' }))}
+                    className={`relative flex items-center gap-3 p-4 rounded-xl border text-right transition-all duration-300 transform active:scale-95 cursor-pointer ${
+                      settings.lang === 'fa'
+                        ? 'border-brand-accent bg-brand-accent/10 shadow-md ring-1 ring-brand-accent'
+                        : 'border-brand-border/40 bg-brand-card/40 hover:border-brand-accent/50 hover:bg-brand-accent/5'
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center bg-black/20 text-md shrink-0 border border-brand-border/20 shadow-inner">
+                      🇮🇷
+                    </div>
+                    <div className="flex-grow text-right">
+                      <div className="text-xs font-extrabold text-white">فارسی</div>
+                      <div className="text-[9px] text-brand-text-muted font-mono leading-none mt-0.5">Persian RTL layout</div>
+                    </div>
+                    {settings.lang === 'fa' && (
+                      <Check className="w-4 h-4 text-brand-accent shrink-0" />
+                    )}
+                  </button>
 
-                <form onSubmit={handleCreateTag} className="space-y-3">
-                  <div>
-                    <label className="block text-[9px] text-brand-text-muted uppercase mb-1">Tag Title English</label>
+                  <button
+                    type="button"
+                    onClick={() => setSettings(prev => ({ ...prev, lang: 'en' }))}
+                    className={`relative flex items-center gap-3 p-4 rounded-xl border text-left transition-all duration-300 transform active:scale-95 cursor-pointer ${
+                      settings.lang === 'en'
+                        ? 'border-brand-accent bg-brand-accent/10 shadow-md ring-1 ring-brand-accent'
+                        : 'border-brand-border/40 bg-brand-card/40 hover:border-brand-accent/50 hover:bg-brand-accent/5'
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center bg-black/20 text-md shrink-0 border border-brand-border/20 shadow-inner">
+                      🇬🇧
+                    </div>
+                    <div className="flex-grow text-left">
+                      <div className="text-xs font-extrabold text-white">English</div>
+                      <div className="text-[9px] text-brand-text-muted font-mono leading-none mt-0.5">UK / US LTR layout</div>
+                    </div>
+                    {settings.lang === 'en' && (
+                      <Check className="w-4 h-4 text-brand-accent shrink-0" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            {/* Section 2: Vault Lock Security */}
+            <section className="bg-brand-card/75 border border-brand-border/40 hover:border-brand-border/80 transition-colors rounded-2xl p-6 space-y-6">
+              <div className="flex items-center gap-3 border-b border-brand-border/20 pb-3.5 ltr:text-left rtl:text-right">
+                <span className="text-xl text-brand-accent">🛡</span>
+                <div>
+                  <h3 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                    {lang === 'fa' ? 'گاوصندوق حفاظتی رمز عبور عددی (PIN)' : 'Security Vault Protect Key'}
+                  </h3>
+                  <p className="text-[10px] text-brand-text-muted mt-0.5">
+                    {lang === 'fa' ? 'جهت امنیت گواهی‌ها، سیستم را با رمز عددی فرعی مسدود کنید' : 'Set a cryptographic entry pin code to secure system databases'}
+                  </p>
+                </div>
+              </div>
+
+              {settings.security.pinCode ? (
+                <div className="space-y-4">
+                  <div className="flex gap-3 items-center p-3.5 bg-brand-accent/5 border border-brand-accent/20 text-brand-accent rounded-xl text-xs ltr:text-left rtl:text-right">
+                    <Check className="w-4.5 h-4.5 shrink-0 text-brand-accent" />
+                    <span>{lang === 'fa' ? 'سپر امنیتی در حال حاضر فعال است و سرورها کاملاً محافظت می‌شوند.' : 'Cryptographic lock shield is fully operational and active.'}</span>
+                  </div>
+
+                  <button
+                    onClick={handleDisableLock}
+                    className="w-full py-2.5 bg-rose-500/10 border border-rose-500/40 text-rose-400 hover:bg-rose-500 hover:text-white rounded-xl font-bold transition-all text-xs cursor-pointer select-none"
+                  >
+                    {t.disableLock}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-[11px] leading-relaxed text-brand-text-muted ltr:text-left rtl:text-right">
+                    {lang === 'fa' 
+                      ? 'یک رمز عبور مستقل ۴ رقمی عددی تعریف کنید تا در هنگام ترک صندلی و شروع مجدد برنامه، اطلاعات حیاتی سرورها کاملاً پوشانده شده و غیرقابل خواندن باشد.' 
+                      : 'Deploy an entry barrier lock PIN to prevent physical snooping in active workspace sessions.'}
+                  </p>
+
+                  {!pinSetupMode ? (
+                    <button
+                      onClick={handleTogglePINSetup}
+                      className="w-full py-2.5 bg-brand-accent hover:bg-brand-accent/90 text-brand-bg font-bold rounded-xl text-xs transition-colors cursor-pointer select-none font-semibold text-center"
+                    >
+                      {lang === 'fa' ? 'تنظیم رمز عددی جدید' : 'Configure Lock Screen PIN'}
+                    </button>
+                  ) : (
+                    <div className="space-y-3 pt-3 border-t border-brand-border/25">
+                      <label className="block text-[11px] text-brand-text font-bold ltr:text-left rtl:text-right">{t.confirmPinLock}</label>
+                      <input
+                        type="password"
+                        maxLength={4}
+                        value={newPINCode}
+                        onChange={(e) => {
+                          setPinSetupError('');
+                          setNewPINCode(e.target.value.replace(/\D/g, ''));
+                        }}
+                        placeholder="e.g. 1365"
+                        className="w-full bg-brand-bg border border-brand-border text-center text-sm p-2.5 rounded-xl text-white focus:outline-none focus:border-brand-accent font-mono tracking-widest"
+                      />
+                      {pinSetupError && <span className="text-[10px] text-rose-500 block">⚠ {pinSetupError}</span>}
+                      
+                      <div className="grid grid-cols-2 gap-3 pt-1">
+                        <button
+                          type="button"
+                          onClick={handleTogglePINSetup}
+                          className="py-2.5 bg-brand-bg border border-brand-border rounded-xl text-xs text-white hover:bg-black/30 cursor-pointer select-none text-center"
+                        >
+                          {t.cancel}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleApplyLock}
+                          className="py-2.5 bg-brand-accent text-brand-bg rounded-xl font-bold text-xs cursor-pointer select-none text-center animate-pulse-slow"
+                        >
+                          {lang === 'fa' ? 'تایید و قفل' : 'Apply Shield'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+
+            {/* Section 3: Financial Accounting System toggle option */}
+            <section className="bg-brand-card/75 border border-brand-border/40 hover:border-brand-border/80 transition-colors rounded-2xl p-6 space-y-6">
+              <div className="flex items-center gap-3 border-b border-brand-border/20 pb-3.5 ltr:text-left rtl:text-right">
+                <span className="text-xl text-brand-accent">💰</span>
+                <div>
+                  <h3 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                    {lang === 'fa' ? 'حسابداری مالی و پیشرفته هزینه گره‌ها' : 'Financial Accounting & Billing System'}
+                  </h3>
+                  <p className="text-[10px] text-brand-text-muted mt-0.5">
+                    {lang === 'fa' ? 'امکان رصد موجودی حساب میزبان‌ها، مبالغ خرید و فاکتورها را مدیریت و فعال‌سازی کنید' : 'Toggle server billing structures, provider credits, and lease renewals metrics'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-black/20 rounded-xl border border-brand-border/20">
+                <div className="flex-1 ltr:text-left rtl:text-right space-y-0.5">
+                  <span className="font-bold text-white text-xs block">
+                    {lang === 'fa' ? 'سیستم یکپارچه حسابداری' : 'Integrated Operations Ledger'}
+                  </span>
+                  <span className="text-[10px] text-brand-text-muted">
+                    {lang === 'fa' ? (settings.enableFinance ? 'وضعیت محاسبات مالی: فعال شده و در تگ‌ها نمایان است' : 'وضعیت محاسبات مالی: موقتاً غیرفعال') : (settings.enableFinance ? 'Operational ledger: Active & visible' : 'Operational ledger: Decoupled & hidden')}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSettings(prev => ({ ...prev, enableFinance: !prev.enableFinance }));
+                    setClipTip(lang === 'fa' ? 'تغییرات سیستم مالی ذخیره شد' : 'Billing configurations updated');
+                    setTimeout(() => setClipTip(null), 2500);
+                  }}
+                  className={`w-12 h-6.5 rounded-full p-0.5 transition-all duration-300 focus:outline-none cursor-pointer ease-in-out select-none shrink-0 ${
+                    settings.enableFinance ? 'bg-brand-accent-secondary' : 'bg-brand-border/85'
+                  }`}
+                >
+                  <div 
+                    className="w-5.5 h-5.5 rounded-full bg-white shadow-md transition-all duration-300 ease-in-out" 
+                    style={{ transform: settings.enableFinance ? (lang === 'fa' ? 'translateX(-22px)' : 'translateX(22px)') : 'translateX(0)' }}
+                  />
+                </button>
+              </div>
+            </section>
+
+            {/* Section 4: Tags Maker */}
+            <section className="bg-brand-card/75 border border-brand-border/40 hover:border-brand-border/80 transition-colors rounded-2xl p-6 space-y-6">
+              <div className="flex items-center gap-3 border-b border-brand-border/20 pb-3.5 ltr:text-left rtl:text-right">
+                <span className="text-xl text-brand-accent">🏷</span>
+                <div>
+                  <h3 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                    {t.manageTags}
+                  </h3>
+                  <p className="text-[10px] text-brand-text-muted mt-0.5">
+                    {lang === 'fa' ? 'برای تفکیک بصری گره‌های مانیتور، برچسب‌های رنگی و اهداف سفارشی بسازید' : 'Produce color-coded visual indicator labels to group server nodes cleanly'}
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={handleCreateTag} className="space-y-4 pt-1 text-right ltr:text-left">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block text-[11px] text-brand-text font-bold">Tag Title (English)</label>
                     <input
                       type="text"
                       required
                       value={newTagEn}
                       onChange={(e) => setNewTagEn(e.target.value)}
-                      placeholder="e.g. Frankfurt Tunnel"
-                      className="w-full bg-brand-bg border border-brand-border rounded-lg p-2 text-white focus:outline-none focus:border-brand-accent text-xs font-mono"
+                      placeholder="e.g. Tunnel Ingress"
+                      className="w-full bg-brand-bg border border-brand-border rounded-xl p-2.5 text-white focus:outline-none focus:border-brand-accent text-xs font-mono"
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-[9px] text-brand-text-muted uppercase mb-1">Tag Title Persian / عنوان تگ فارسی</label>
+                  <div className="space-y-1">
+                    <label className="block text-[11px] text-brand-text font-bold">عنوان برچسب (فارسی)</label>
                     <input
                       type="text"
                       required
                       value={newTagFa}
                       onChange={(e) => setNewTagFa(e.target.value)}
-                      placeholder="مثلا تونل فرانکفورت"
-                      className="w-full bg-brand-bg border border-brand-border rounded-lg p-2 text-white focus:outline-none focus:border-brand-accent text-xs font-sans"
+                      placeholder="مثلاً تونل ورودی"
+                      className="w-full bg-brand-bg border border-brand-border rounded-xl p-2.5 text-white focus:outline-none focus:border-brand-accent text-xs"
                     />
                   </div>
+                </div>
 
-                  <div>
-                    <label className="block text-[9px] text-brand-text-muted uppercase mb-1">Pick Tag Color Indicator</label>
-                    <div className="flex gap-2">
-                      <input
-                        type="color"
-                        value={newTagColor}
-                        onChange={(e) => setNewTagColor(e.target.value)}
-                        className="w-12 h-8 rounded bg-brand-bg border border-brand-border cursor-pointer shrink-0"
-                      />
-                      <div className="flex-1 p-1 px-3 bg-black/40 border border-brand-border/40 rounded flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: newTagColor }}></span>
-                        <span className="text-[10px] font-mono text-white">{newTagColor}</span>
-                      </div>
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] text-brand-text font-bold">Pick Tag Color Indicator</label>
+                  <div className="flex gap-3">
+                    <input
+                      type="color"
+                      value={newTagColor}
+                      onChange={(e) => setNewTagColor(e.target.value)}
+                      className="w-14 h-10 rounded-xl bg-brand-bg border border-brand-border cursor-pointer shrink-0"
+                    />
+                    <div className="flex-1 p-2 bg-black/25 border border-brand-border/25 rounded-xl flex items-center gap-2.5">
+                      <span className="w-3.5 h-3.5 rounded-full shadow-inner border border-white/10" style={{ backgroundColor: newTagColor }}></span>
+                      <span className="text-[11px] font-mono text-white tracking-wider">{newTagColor}</span>
                     </div>
                   </div>
-
-                  <button
-                    type="submit"
-                    className="w-full py-2 bg-brand-accent text-brand-bg font-bold rounded-lg text-xs hover:bg-brand-accent/90 cursor-pointer"
-                  >
-                    {t.addTagBtn}
-                  </button>
-                </form>
-
-                {/* Built-in tags representation lists */}
-                <div className="border-t border-brand-border/30 pt-3">
-                  <span className="block text-[10px] font-bold text-brand-text-muted uppercase mb-2">Existing Workspace Tags:</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {tags.map((tag) => (
-                      <span
-                        key={tag.id}
-                        className="text-[9px] px-2 py-0.5 rounded font-bold uppercase text-white font-mono shadow-sm"
-                        style={{ backgroundColor: tag.color, color: tag.textColor }}
-                      >
-                        {lang === 'fa' ? tag.nameFa : tag.nameEn}
-                      </span>
-                    ))}
-                  </div>
                 </div>
-              </div>
-
-              {/* Box 4: Column view fields filtering selectors */}
-              <div className="bg-brand-card border border-brand-border rounded-2xl p-5 space-y-3 col-span-1 md:col-span-2">
-                <h3 className="text-sm font-bold text-white font-mono flex items-center gap-1.5 border-b border-brand-border/40 pb-2">
-                  <span>⚙ {lang === 'fa' ? 'فیلتر نمایش فیلدهای اطلاعاتی' : 'Visual Registries Column Filter'}</span>
-                </h3>
-
-                <p className="text-[10px] leading-relaxed text-brand-text-muted mb-3">
-                  {t.visibleFieldsConfig}
-                </p>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <label className="flex items-center gap-2 cursor-pointer py-1 hover:text-white">
-                    <input
-                      type="checkbox"
-                      checked={settings.visibleFields.credentials}
-                      onChange={(e) => setSettings(prev => ({ 
-                        ...prev, 
-                        visibleFields: { ...prev.visibleFields, credentials: e.target.checked }
-                      }))}
-                      className="w-3.5 h-3.5 text-brand-accent bg-brand-bg rounded border-brand-border"
-                    />
-                    <span>{lang === 'fa' ? 'نمایش کاراکتر عبور' : 'Pre-view credentials'}</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer py-1 hover:text-white">
-                    <input
-                      type="checkbox"
-                      checked={settings.visibleFields.tags}
-                      onChange={(e) => setSettings(prev => ({ 
-                        ...prev, 
-                        visibleFields: { ...prev.visibleFields, tags: e.target.checked }
-                      }))}
-                      className="w-3.5 h-3.5 text-brand-accent bg-brand-bg rounded border-brand-border"
-                    />
-                    <span>{t.tags}</span>
-                  </label>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Box 5: Backup, Restore & Reset Database Panel */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-brand-text-muted">
-              
-              {/* Backup & Restore sub-section */}
-              <div className="bg-brand-card border border-brand-border rounded-xl p-5 relative col-span-1 md:col-span-2 space-y-4">
-                <h3 className="text-sm font-bold text-white font-mono flex items-center gap-2 border-b border-brand-border/40 pb-2">
-                  <FileDown className="w-5 h-5 text-brand-accent" />
-                  <span>{lang === 'fa' ? 'پشتیبان‌گیری و تمدید حیات همیشگی داده‌ها' : 'Durable Database Vault & Payload'}</span>
-                </h3>
-
-                <p className="text-[10.5px] leading-relaxed text-brand-text-muted">
-                  {lang === 'fa' 
-                    ? 'برنامه JeyNodePad داده‌های باارزش شما را صرفا درون حافظه محلی مروگر کاملا آفلاین ذخیره می‌نماید. جهت جلوگیری از بروز خطای تصادفی، لطفاً فایلهای بکاپ دوره‌ای را به رایانه خود منتقل کنید.' 
-                    : 'Since JeyNodePad stores your credentials in sandboxed local structures, export a periodic offline JSON array backup to safe-keep records.'}
-                </p>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Export */}
-                  <div className="p-4 bg-brand-bg/50 border border-brand-border/40 rounded-xl space-y-3">
-                    <h4 className="text-xs font-bold text-brand-text uppercase tracking-wider">{lang === 'fa' ? 'استخراج پشتیبان (بکاپ)' : 'Download Payload'}</h4>
-                    <p className="text-[10px] text-brand-text-muted leading-relaxed">
-                      {lang === 'fa' ? 'فایل بکاپ حاوی کلیه اطلاعات سرورها و تنظیمات را دریافت کنید.' : 'Save configurations offline as a pristine JSON payload.'}
-                    </p>
-                    <button
-                      onClick={handleTriggerExport}
-                      className="w-full py-2 bg-brand-accent text-white rounded-lg font-bold font-mono text-xs hover:bg-brand-accent/90 transition-all cursor-pointer"
-                    >
-                      {t.exportBackup}
-                    </button>
-                  </div>
-
-                  {/* Import */}
-                  <div className="p-4 bg-brand-bg/50 border border-brand-border/40 rounded-xl space-y-3">
-                    <h4 className="text-xs font-bold text-brand-text uppercase tracking-wider">{lang === 'fa' ? 'بازیابی پشتیبان (ریستور)' : 'Merge Backup payload'}</h4>
-                    <p className="text-[10px] text-brand-text-muted leading-relaxed">
-                      {lang === 'fa' 
-                        ? 'می‌توانید فایل پشتیبان مکتوب (.json) را مستقیماً انتخاب کنید یا رشته متنی بکاپ قبلی خود را در کادر زیر قرار دهید:' 
-                        : 'Choose your exported backup file (.json) or paste the JSON structure directly below:'}
-                    </p>
-                    
-                    {/* Premium File Selector Input Box */}
-                    <label className="flex items-center justify-center gap-2 p-3 border border-dashed border-brand-border/60 hover:border-brand-accent hover:bg-brand-accent/5 rounded-xl cursor-pointer transition-colors text-white font-mono text-[10.5px] font-bold select-none text-center bg-black/20">
-                      <FileUp className="w-4 h-4 text-brand-accent shrink-0" />
-                      <span>{lang === 'fa' ? 'بارگذاری فایل پشتیبان (بکاپ)' : 'Choose Backup File (.json)'}</span>
-                      <input
-                        type="file"
-                        accept=".json"
-                        onChange={handleFileChange}
-                        className="hidden"
-                      />
-                    </label>
-
-                    <div className="text-center font-mono text-[9px] text-brand-text-muted uppercase tracking-wider">— {lang === 'fa' ? 'یا قرار دادن متن بکاپ' : 'Or Paste Raw Text'} —</div>
-
-                    <textarea
-                      rows={2}
-                      value={backupText}
-                      onChange={(e) => setBackupText(e.target.value)}
-                      placeholder='{"servers": [], ...}'
-                      className="w-full bg-brand-bg border border-brand-border p-2 rounded text-[10px] font-mono text-brand-text focus:outline-none focus:border-brand-accent"
-                    ></textarea>
-                    {backupErrorMsg && (
-                      <span className={`block text-[10px] font-mono leading-relaxed p-1.5 rounded ${backupErrorMsg.startsWith('✓') ? 'text-emerald-400 bg-emerald-500/5 border border-emerald-500/10' : 'text-rose-400 bg-rose-500/5 border border-rose-500/10'}`}>
-                        {backupErrorMsg}
-                      </span>
-                    )}
-                    <button
-                      onClick={handleTriggerImport}
-                      className="w-full py-2 bg-brand-accent-secondary text-brand-text border border-brand-border hover:bg-brand-accent-secondary/80 rounded-lg font-bold font-mono text-xs transition-all cursor-pointer"
-                    >
-                      {t.importBackup}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Full App Reset section with clear warning */}
-              <div className="bg-brand-card border border-brand-border rounded-xl p-5 col-span-1 md:col-span-2 space-y-3">
-                <h3 className="text-sm font-bold text-rose-500 font-mono flex items-center gap-2 border-b border-rose-500/20 pb-2">
-                  <AlertTriangle className="w-5 h-5 text-rose-500" />
-                  <span>{lang === 'fa' ? 'منطقه‌ی خطر امنیتی و ریست کامل' : 'Critical Hazard Zone & Master Purge'}</span>
-                </h3>
-
-                <p className="text-[10.5px] leading-relaxed text-brand-text-muted">
-                  {lang === 'fa'
-                    ? 'کلیک روی دکمه زیر موجب پاکسازی تمام اطلاعات، تنظیمات شخصی، تم، پسوردها و راه‌اندازی مجدد خوش‌آمدگویی برنامه می‌گردد. این عمل بلافاصله انجام شده و غیرقابل بازگردانی است.'
-                    : 'Invoking a master system wipe clears all custom servers, passwords, themes, and re-triggers the onboarding portal. This process is immediately final.'}
-                </p>
 
                 <button
-                  type="button"
-                  onClick={handleFullAppReset}
-                  className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white font-black text-xs rounded-lg shadow shadow-rose-500/10 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
+                  type="submit"
+                  className="w-full py-2.5 bg-brand-accent text-brand-bg hover:bg-brand-accent/90 font-bold rounded-xl text-xs transition-colors cursor-pointer select-none text-center"
                 >
-                  <Trash className="w-4 h-4 shrink-0" />
-                  <span>{lang === 'fa' ? 'ریست کامل برنامه (پاکسازی مرورگر)' : 'Perform Full Master Purge Reset'}</span>
+                  {t.addTagBtn}
                 </button>
+              </form>
+
+              {/* Tag representation list */}
+              <div className="border-t border-brand-border/15 pt-4 space-y-2 ltr:text-left rtl:text-right">
+                <span className="block text-[11px] font-bold text-white uppercase tracking-wider">{lang === 'fa' ? 'تگ‌های فعلی پایگاه داده:' : 'Current Live Database Tags:'}</span>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {tags.map((tag) => (
+                    <span
+                      key={tag.id}
+                      className="text-[10px] px-3 py-1 rounded-lg font-bold uppercase text-white font-mono shadow-sm flex items-center gap-1.5 border border-white/5"
+                      style={{ backgroundColor: tag.color, color: tag.textColor }}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-white opacity-85" />
+                      {lang === 'fa' ? tag.nameFa : tag.nameEn}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* Section 5: Filter visible fields */}
+            <section className="bg-brand-card/75 border border-brand-border/40 hover:border-brand-border/80 transition-colors rounded-2xl p-6 space-y-6">
+              <div className="flex items-center gap-3 border-b border-brand-border/20 pb-3.5 ltr:text-left rtl:text-right">
+                <span className="text-xl text-brand-accent">⚙</span>
+                <div>
+                  <h3 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                    {lang === 'fa' ? 'فیلترهای نمایش فیلدهای اطلاعاتی گره' : 'Visual Registries Column Filter'}
+                  </h3>
+                  <p className="text-[10px] text-brand-text-muted mt-0.5">
+                    {t.visibleFieldsConfig}
+                  </p>
+                </div>
               </div>
 
-            </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <label className="flex items-center gap-3 p-4 bg-black/20 hover:bg-black/30 border border-brand-border/20 rounded-xl cursor-pointer transition-all text-white select-none">
+                  <input
+                    type="checkbox"
+                    checked={settings.visibleFields.credentials}
+                    onChange={(e) => setSettings(prev => ({ 
+                      ...prev, 
+                      visibleFields: { ...prev.visibleFields, credentials: e.target.checked }
+                    }))}
+                    className="w-4.5 h-4.5 text-brand-accent bg-brand-bg rounded-lg border-brand-border cursor-pointer focus:ring-0"
+                  />
+                  <div className="flex-1 ltr:text-left rtl:text-right">
+                    <span className="font-bold block text-xs">{lang === 'fa' ? 'پیش‌نمایش پسوردهای عبور' : 'Display Lock Credentials'}</span>
+                    <span className="text-[9.5px] text-brand-text-muted mt-0.5 block">{lang === 'fa' ? 'نمایش رمز عبور در لیست سرورها به صورت مستقیم' : 'Expose and render secrets inline'}</span>
+                  </div>
+                </label>
 
-            {/* Developer biographical card block */}
+                <label className="flex items-center gap-3 p-4 bg-black/20 hover:bg-black/30 border border-brand-border/20 rounded-xl cursor-pointer transition-all text-white select-none">
+                  <input
+                    type="checkbox"
+                    checked={settings.visibleFields.tags}
+                    onChange={(e) => setSettings(prev => ({ 
+                      ...prev, 
+                      visibleFields: { ...prev.visibleFields, tags: e.target.checked }
+                    }))}
+                    className="w-4.5 h-4.5 text-brand-accent bg-brand-bg rounded-lg border-brand-border cursor-pointer focus:ring-0"
+                  />
+                  <div className="flex-1 ltr:text-left rtl:text-right">
+                    <span className="font-bold block text-xs">{lang === 'fa' ? 'نمایش برچسب‌های تفکیک گره' : 'Display Label Tags'}</span>
+                    <span className="text-[9.5px] text-brand-text-muted mt-0.5 block">{lang === 'fa' ? 'رندر کردن تگ‌های ارتباطی گره‌ها بر روی فیلدها' : 'Include tags in active dashboard blocks'}</span>
+                  </div>
+                </label>
+              </div>
+            </section>
+
+            {/* Section 6: Backup, Restore */}
+            <section className="bg-brand-card/75 border border-brand-border/40 hover:border-brand-border/80 transition-colors rounded-2xl p-6 space-y-6">
+              <div className="flex items-center gap-3 border-b border-brand-border/20 pb-3.5 ltr:text-left rtl:text-right">
+                <span className="text-xl text-brand-accent">💾</span>
+                <div>
+                  <h3 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                    {lang === 'fa' ? 'پشتیبان‌گیری و پایدارسازی مکرر داده‌ها' : 'Offline State Backup & Recovery'}
+                  </h3>
+                  <p className="text-[10px] text-brand-text-muted mt-0.5">
+                    {lang === 'fa' ? 'پست‌های مانیتور و حساب‌های مالی را جهت مهاجرت به دستگاه دیگر صادر کنید' : 'Save database snapshots offline or migrate to another browser client workspace'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-1">
+                {/* Export payload box */}
+                <div className="p-5 bg-black/20 border border-brand-border/20 rounded-2xl flex flex-col justify-between space-y-4 ltr:text-left rtl:text-right">
+                  <div className="space-y-1.5">
+                    <h4 className="text-xs font-extrabold text-white uppercase tracking-wider">{lang === 'fa' ? 'استخراج پشتیبان (دانلود بکاپ)' : 'Capture JSON Backup'}</h4>
+                    <p className="text-[10.5px] text-brand-text-muted leading-relaxed">
+                      {lang === 'fa' ? 'بایگانی کاملی شامل تمام نودها، ارائه‌دهندگان، تاریخچه تراکنش‌ها و برچسب‌ها را به شکل فایل محلی استخراج کنید.' : 'Save configurations offline as a fully parsed robust JSON stream.'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleTriggerExport}
+                    className="w-full py-2.5 bg-brand-accent hover:bg-brand-accent/90 text-brand-bg rounded-xl font-bold font-mono text-xs transition-colors cursor-pointer select-none text-center"
+                  >
+                    {t.exportBackup}
+                  </button>
+                </div>
+
+                {/* Import payload box */}
+                <div className="p-5 bg-black/20 border border-brand-border/20 rounded-2xl space-y-4 ltr:text-left rtl:text-right">
+                  <div className="space-y-1.5">
+                    <h4 className="text-xs font-extrabold text-white uppercase tracking-wider">{lang === 'fa' ? 'بازیابی پشتیبان (ریستور داده)' : 'Import & Restore Database'}</h4>
+                    <p className="text-[10.5px] text-brand-text-muted leading-relaxed">
+                      {lang === 'fa' 
+                        ? 'یک سرور پشتیبان قبلی را با قرار دادن مستقیم شناور کد فشرده یا بارگذاری فایل بازیابی نمایید:' 
+                        : 'Choose your backup file, or drop your payload directly inside the code box:'}
+                    </p>
+                  </div>
+
+                  <label className="flex items-center justify-center gap-2.5 p-3.5 border border-dashed border-brand-border/60 hover:border-brand-accent hover:bg-brand-accent/5 rounded-xl cursor-pointer transition-colors text-white font-mono text-[11px] font-bold bg-black/25">
+                    <FileUp className="w-4.5 h-4.5 text-brand-accent shrink-0" />
+                    <span>{lang === 'fa' ? 'انتخاب فایل پشتیبان (.json)' : 'Upload Backup File (.json)'}</span>
+                    <input
+                      type="file"
+                      accept=".json"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                  </label>
+
+                  <div className="text-center font-mono text-[9px] text-brand-text-muted uppercase tracking-widest">— {lang === 'fa' ? 'یا قرار دادن شناسه مکتوب' : 'Or Drop code text outline'} —</div>
+
+                  <textarea
+                    rows={2}
+                    value={backupText}
+                    onChange={(e) => setBackupText(e.target.value)}
+                    placeholder='{"servers": [], "categories": [], ...}'
+                    className="w-full bg-brand-bg border border-brand-border p-2.5 rounded-xl text-[10.5px] font-mono text-brand-text placeholder:opacity-30 focus:outline-none focus:border-brand-accent tracking-normal focus:ring-0 leading-relaxed active:scale-[0.99] transition-transform"
+                  />
+
+                  {backupErrorMsg && (
+                    <span className={`block text-[10.5px] font-mono leading-relaxed p-2.5 rounded-xl ${backupErrorMsg.startsWith('✓') ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20' : 'text-rose-400 bg-rose-500/10 border border-rose-500/20'}`}>
+                      {backupErrorMsg}
+                    </span>
+                  )}
+
+                  <button
+                    onClick={handleTriggerImport}
+                    className="w-full py-2.5 bg-brand-accent-secondary/10 hover:bg-brand-accent-secondary hover:text-brand-bg text-brand-text/90 border border-brand-accent-secondary/35 hover:border-transparent rounded-xl font-bold font-mono text-xs transition-all cursor-pointer select-none text-center"
+                  >
+                    {t.importBackup}
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            {/* Section 7: Hazard zone */}
+            <section className="bg-[#12080a] border border-rose-500/25 hover:border-rose-500/50 transition-colors rounded-2xl p-6 space-y-4">
+              <div className="flex items-center gap-2.5 border-b border-rose-500/20 pb-2.5 ltr:text-left rtl:text-right">
+                <AlertTriangle className="w-5 h-5 text-rose-500 animate-pulse shrink-0" />
+                <h3 className="text-xs font-extrabold uppercase tracking-widest text-rose-500 font-mono">
+                  {lang === 'fa' ? 'حوزه بحرانی و پاکسازی کامل داده‌ها' : 'Master Reset Hazard Zone'}
+                </h3>
+              </div>
+
+              <p className="text-[11px] leading-relaxed text-rose-400/90 font-medium ltr:text-left rtl:text-right">
+                {lang === 'fa'
+                  ? 'توجه مکرر: فعال سازی این بازنشانی کلید مفعولی و پاکسازی، به طور آنی بدون قابلیت بازگشت تمام رکوردها، هیستوری فاکتورها، برچسب‌ها و کوئست‌ها را نابود می‌سازد و به وارف خوش‌آمدگویی Onboarding باز میگردد.'
+                  : 'WARNING: Invoking a master wipe deletes all custom configurations, credentials, transaction history, and resets onboarding. This process is immediate and final.'}
+              </p>
+
+              <button
+                type="button"
+                onClick={handleFullAppReset}
+                className="w-full py-3 bg-rose-800/15 hover:bg-rose-600 border border-rose-500/40 hover:border-transparent text-rose-400 hover:text-white font-black text-xs rounded-xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 select-none"
+              >
+                <Trash className="w-4 h-4 shrink-0" />
+                <span>{lang === 'fa' ? 'ریست کامل برنامه و پاکسازی کلیه داده‌ها' : 'Execute System Master Purge Wiping'}</span>
+              </button>
+            </section>
+
+            {/* Biographical Card Section */}
             <DeveloperAbout lang={lang} />
           </div>
         )}
@@ -2463,68 +2572,7 @@ export default function App() {
           </div>
         )}
 
-        {/* APP HARD RESET CONFIRMATION MODAL */}
-        {showResetConfirmModal && (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" dir={lang === 'fa' ? 'rtl' : 'ltr'}>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-brand-card border border-rose-500/30 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl relative"
-            >
-              <div className="flex items-center gap-2 border-b border-rose-500/20 pb-3">
-                <AlertTriangle className="w-5 h-5 text-rose-500 animate-pulse shrink-0" />
-                <h3 className="text-sm font-bold text-white font-mono uppercase tracking-wider">
-                  {lang === 'fa' ? 'تایید نهایی پاکسازی کل پایگاه داده' : 'Final Database Decimation Wipe'}
-                </h3>
-              </div>
 
-              <div className="text-xs text-brand-text-muted space-y-2 leading-relaxed">
-                <p className="text-rose-400 font-bold">
-                  {lang === 'fa' 
-                    ? 'هشدار جدی: این عملیات به هیچ عنوان قابل بازگردانی نبوده و تمامی اطلاعات ذخیره شده درون مرورگر شما را به کلی متبخر می‌گرداند!'
-                    : 'CRITICAL ALERT: This process is absolute, irreversible, and clears all operational databases inside your browser sandboxed workspace!'}
-                </p>
-                <p>
-                  {lang === 'fa' 
-                    ? 'جهت اتمام فرایند و اعمال ریست کامل برنامه، لطفاً کلمه‌ی RESET را با حروف بزرگ لاتین در کادر زیر تایپ نمایید:'
-                    : 'To verify system decimation and execute a clean slate wipe, please write the uppercase word RESET underneath:'}
-                </p>
-              </div>
-
-              <div>
-                <input
-                  type="text"
-                  required
-                  placeholder="RESET"
-                  value={resetConfirmInput}
-                  onChange={(e) => setResetConfirmInput(e.target.value)}
-                  className="w-full bg-brand-bg border border-brand-border rounded-lg p-2.5 text-center text-white focus:outline-none focus:border-rose-500 font-mono text-xs font-bold tracking-widest placeholder:opacity-40"
-                />
-                
-                {resetModalError && (
-                  <span className="block text-[10px] text-rose-500 font-bold mt-1.5 font-mono text-center">⚠ {resetModalError}</span>
-                )}
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2 border-t border-brand-border/30">
-                <button
-                  type="button"
-                  onClick={() => setShowResetConfirmModal(false)}
-                  className="px-4 py-2 bg-brand-bg border border-brand-border text-brand-text-muted rounded-xl text-xs hover:text-white cursor-pointer select-none font-semibold transition-all"
-                >
-                  {t.cancel}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleExecuteFullAppReset}
-                  className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-black rounded-xl text-xs transition-colors shadow-lg shadow-rose-600/10 cursor-pointer select-none"
-                >
-                  {lang === 'fa' ? 'بازنشانی کامل داده‌ها' : 'Purge All Database'}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
 
         {/* ELEGANT INTUITIVE SSH WINDOWS/LINUX LAUNCHER MODAL */}
         {showSSHInstructionModal && showSSHInstructionModal.isOpen && (
@@ -2645,6 +2693,69 @@ export default function App() {
       </main>
         </div>
       </div>
+
+      {/* APP HARD RESET CONFIRMATION MODAL */}
+      {showResetConfirmModal && (
+        <div className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-md flex items-center justify-center p-4" style={{ direction: lang === 'fa' ? 'rtl' : 'ltr' }}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-brand-card border border-rose-500/40 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl relative"
+          >
+            <div className="flex items-center gap-2 border-b border-rose-500/20 pb-3">
+              <AlertTriangle className="w-5 h-5 text-rose-500 animate-pulse shrink-0" />
+              <h3 className="text-sm font-bold text-white font-mono uppercase tracking-wider">
+                {lang === 'fa' ? 'تایید نهایی پاکسازی کل پایگاه داده' : 'Final Database Decimation Wipe'}
+              </h3>
+            </div>
+
+            <div className="text-xs text-brand-text-muted space-y-2 leading-relaxed">
+              <p className="text-rose-400 font-bold">
+                {lang === 'fa' 
+                  ? 'هشدار جدی: این عملیات به هیچ عنوان قابل بازگردانی نبوده و تمامی اطلاعات ذخیره شده درون مرورگر شما را به کلی متبخر می‌گرداند!'
+                  : 'CRITICAL ALERT: This process is absolute, irreversible, and clears all operational databases inside your browser sandboxed workspace!'}
+              </p>
+              <p>
+                {lang === 'fa' 
+                  ? 'جهت اتمام فرایند و اعمال ریست کامل برنامه، لطفاً کمرنگ کلمه‌‌ی RESET را با حروف بزرگ لاتین در کادر زیر تایپ نمایید:'
+                  : 'To verify system decimation and execute a clean slate wipe, please write the uppercase word RESET underneath:'}
+              </p>
+            </div>
+
+            <div>
+              <input
+                type="text"
+                required
+                placeholder="RESET"
+                value={resetConfirmInput}
+                onChange={(e) => setResetConfirmInput(e.target.value)}
+                className="w-full bg-brand-bg border border-brand-border rounded-lg p-2.5 text-center text-white focus:outline-none focus:border-rose-500 font-mono text-xs font-bold tracking-widest placeholder:opacity-40"
+              />
+              
+              {resetModalError && (
+                <span className="block text-[10px] text-rose-500 font-bold mt-1.5 font-mono text-center">⚠ {resetModalError}</span>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-brand-border/30">
+              <button
+                type="button"
+                onClick={() => setShowResetConfirmModal(false)}
+                className="px-4 py-2 bg-brand-bg border border-brand-border text-brand-text-muted rounded-xl text-xs hover:text-white cursor-pointer select-none font-semibold transition-all"
+              >
+                {t.cancel}
+              </button>
+              <button
+                type="button"
+                onClick={handleExecuteFullAppReset}
+                className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-black rounded-xl text-xs transition-colors shadow-lg shadow-rose-600/10 cursor-pointer select-none"
+              >
+                {lang === 'fa' ? 'بازنشانی کامل داده‌ها' : 'Purge All Database'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

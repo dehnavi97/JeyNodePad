@@ -84,7 +84,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   };
 
   return (
-    <div className={`min-h-screen terminal-grid bg-brand-bg flex items-center justify-center p-4 transition-all duration-300 theme-${theme}`} dir={lang === 'fa' ? 'rtl' : 'ltr'}>
+    <div className={`w-full flex-1 overflow-y-auto terminal-grid bg-brand-bg flex items-center justify-center p-4 transition-all duration-300 theme-${theme}`} dir={lang === 'fa' ? 'rtl' : 'ltr'}>
       <motion.div 
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}

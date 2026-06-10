@@ -31,7 +31,8 @@ export const INITIAL_SETTINGS: AppSettings = {
     lockMethod: 'none',
     isLocked: false,
     lockTimeoutMinutes: 10,
-  }
+  },
+  enableFinance: false
 };
 
 export const INITIAL_STATS: UserStats = {
@@ -235,6 +236,8 @@ export const TRANSLATIONS = {
     resetAppConfirm: 'WARNING: This is completely irreversible and will destroy all stored servers, credentials, custom tags, hosting providers, and access codes. Are you absolutely sure you want to delete everything?',
     resetAppBtn: 'Reset Everything Permanently',
     showTrashServers: 'View Deleted Servers (Trash)',
+    financeBilling: 'Financial & Billing Sys',
+    financeBillingDesc: 'Toggle display of server pricing, provider balances, renewal logs, and billing math.',
   },
   fa: {
     appTitle: 'JeyNodePad - مدیریت سرورها',
@@ -368,5 +371,7 @@ export const TRANSLATIONS = {
     resetAppConfirm: 'هشدار جدی: این عمل کل پایگاه داده محلی شامل تمام سرورها، تگ‌ها، نام‌های کاربری، رمزهای عبور و تاریخچه تمدیدها را به طور دائم منحدم می‌کند و ابداً قابل بازگردانی نیست. آیا مایل به ریست کامل برنامه هستید؟',
     resetAppBtn: 'حذف کامل تمام اطلاعات و ریست برنامه',
     showTrashServers: 'سرورهای حذف شده (سطل زباله)',
+    financeBilling: 'حسابداری مالی و هزینه‌ها',
+    financeBillingDesc: 'نمایش فیلدهای مالی، قیمت دوره‌ای سرورها، موجودی ارائه‌دهندگان و زبانه تراکنش‌ها.',
   }
 };

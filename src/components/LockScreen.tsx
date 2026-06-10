@@ -48,7 +48,7 @@ export function LockScreen({ correctPin, lang, onUnlock }: LockScreenProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 terminal-grid bg-brand-bg flex items-center justify-center p-4" dir={lang === 'fa' ? 'rtl' : 'ltr'}>
+    <div className="w-full flex-1 terminal-grid bg-brand-bg flex items-center justify-center p-4" dir={lang === 'fa' ? 'rtl' : 'ltr'}>
       <motion.div 
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
