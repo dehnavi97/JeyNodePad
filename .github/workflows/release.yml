@@ -47,7 +47,10 @@ jobs:
       # نصب وابستگی‌های فرانت‌اند (Vite)
       # اگر از npm استفاده می‌کنید: npm ci و برای yarn: yarn install
       - name: install frontend dependencies
-        run: npm install
+        run: |
+          corepack enable
+          corepack prepare pnpm@latest --activate
+          pnpm install
 
       # ساخت و انتشار خودکار در گیت‌هاب
       - name: Build and Publish
