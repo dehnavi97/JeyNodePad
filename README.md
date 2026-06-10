@@ -21,7 +21,7 @@ Featuring active visual stat dashboards, interactive interactive terminal tabs, 
 
 ---
 
-![JeyNode Screenshot](![نمای کلی جی‌نود](screenshot_en.jpg))
+![JeyNode Screenshot](screenshot_en.jpg)
 
 </div>
 
