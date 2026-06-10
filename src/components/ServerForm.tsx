@@ -16,6 +16,17 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
+// @ts-ignore
+import ubuntuLogo from '../../assets/os/ubuntu.svg';
+// @ts-ignore
+import debianLogo from '../../assets/os/debian.svg';
+// @ts-ignore
+import centosLogo from '../../assets/os/centos.svg';
+// @ts-ignore
+import alpineLogo from '../../assets/os/alpine.svg';
+// @ts-ignore
+import windowsLogo from '../../assets/os/windows.svg';
+
 interface ServerFormProps {
   initialServer?: Server;
   providers: ProviderAccount[];
@@ -311,11 +322,11 @@ export function ServerForm({
                 </label>
                 <div className="grid grid-cols-5 gap-1.5">
                   {[
-                    { id: 'ubuntu', label: 'Ubuntu', logo: '🟠' },
-                    { id: 'debian', label: 'Debian', logo: '🌀' },
-                    { id: 'centos', label: 'Rocky/Cent', logo: '🟢' },
-                    { id: 'alpine', label: 'Alpine', logo: '🏔️' },
-                    { id: 'windows', label: 'Windows', logo: '🪟' },
+                    { id: 'ubuntu', label: 'Ubuntu', logo: ubuntuLogo },
+                    { id: 'debian', label: 'Debian', logo: debianLogo },
+                    { id: 'centos', label: 'Rocky/Cent', logo: centosLogo },
+                    { id: 'alpine', label: 'Alpine', logo: alpineLogo },
+                    { id: 'windows', label: 'Windows', logo: windowsLogo },
                   ].map((os) => {
                     const isSelected = osType === os.id;
                     return (
@@ -330,7 +341,9 @@ export function ServerForm({
                         }`}
                         title={os.label}
                       >
-                        <span className="text-sm select-none">{os.logo}</span>
+                        <span className="w-5 h-5 flex items-center justify-center select-none">
+                          <img src={os.logo} alt={os.label} className="w-4.5 h-4.5 object-contain" referrerPolicy="no-referrer" />
+                        </span>
                         <span className="text-[8px] font-mono leading-none truncate w-full text-center">{os.label}</span>
                       </button>
                     );
