@@ -21,21 +21,7 @@ Featuring active visual stat dashboards, interactive interactive terminal tabs, 
 
 ---
 
-### Screenshot Placeholder
-```
-+-----------------------------------------------------------+
-|                      JeyNode Console                      |
-+-----------------------------------------------------------+
-|  [ Servers ]      [ SSH Terminals ]       [ Settings ⚙️ ]  |
-|                                                           |
-|  IP: 192.168.1.1  |  $ uptime                             |
-|  Port: 22         |  14:23:10 up 45 days, 4 min           |
-|  Status: ACTIVE   |  [====================] RAM: 45%      |
-|                   |  [======              ] CPU: 12%      |
-|                                                           |
-+-----------------------------------------------------------+
-```
-*(Insert your own application screenshot image here using: `![JeyNode Screenshot](path_to_your_screenshot.png)`)*
+![JeyNode Screenshot](![نمای کلی جی‌نود](screenshot_en.jpg))
 
 </div>
 
@@ -58,7 +44,6 @@ Featuring active visual stat dashboards, interactive interactive terminal tabs, 
 
 ---
 
-### محل قرارگیری تصویر پیش‌نمایش
-*(تصویر اسکرین‌شات برنامه را اینجا آپلود کرده و با کد زیر جایگزین کنید: `![نمای کلی جی‌نود](path_to_your_screenshot.png)`)*
+![نمای کلی جی‌نود](screenshot_fa.jpg)
 
 </div>
