@@ -106,6 +106,154 @@ const renderOSLogo = (osType: string | undefined, className = "w-4.5 h-4.5 objec
   }
 };
 
+const isTauri = typeof window !== 'undefined' && (('__TAURI__' in window) || (window as any).__TAURI__ !== undefined);
+
+const openExternalUrl = async (url: string) => {
+  if (isTauri) {
+    try {
+      const tauri = (window as any).__TAURI__;
+      if (tauri.shell && typeof tauri.shell.open === 'function') {
+        await tauri.shell.open(url);
+        return;
+      }
+      if (tauri.core && typeof tauri.core.invoke === 'function') {
+        await tauri.core.invoke('plugin:shell|open', { value: url });
+        return;
+      }
+      if (tauri.invoke && typeof tauri.invoke === 'function') {
+        await tauri.invoke('open_url', { url });
+        return;
+      }
+    } catch (e) {
+      console.warn("Tauri shell open failed, falling back to window.open", e);
+    }
+  }
+  window.open(url, '_blank');
+};
+
+const TauriTitleBar = ({ lang }: { lang: 'en' | 'fa' }) => {
+  const [isMaximized, setIsMaximized] = useState(false);
+
+  useEffect(() => {
+    if (!isTauri) return;
+    
+    const checkMaximized = async () => {
+      try {
+        const win = (window as any).__TAURI__.window.getCurrentWindow();
+        if (win && typeof win.isMaximized === 'function') {
+          const max = await win.isMaximized();
+          setIsMaximized(max);
+        }
+      } catch (err) {
+        // ignore
+      }
+    };
+
+    checkMaximized();
+    const interval = setInterval(checkMaximized, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (!isTauri) return null;
+
+  const handleMinimize = async () => {
+    try {
+      const win = (window as any).__TAURI__.window.getCurrentWindow();
+      await win.minimize();
+    } catch (err) {
+      console.error("Minimize error:", err);
+    }
+  };
+
+  const handleMaximize = async () => {
+    try {
+      const win = (window as any).__TAURI__.window.getCurrentWindow();
+      await win.toggleMaximize();
+      const max = await win.isMaximized();
+      setIsMaximized(max);
+    } catch (err) {
+      console.error("Maximize error:", err);
+    }
+  };
+
+  const handleClose = async () => {
+    try {
+      const win = (window as any).__TAURI__.window.getCurrentWindow();
+      await win.close();
+    } catch (err) {
+      console.error("Close error:", err);
+    }
+  };
+
+  return (
+    <div 
+      className="h-10 bg-brand-card border-b border-brand-border/30 flex items-center justify-between select-none shrink-0 z-50 text-xs font-mono"
+      style={{ direction: 'ltr' }}
+    >
+      {/* Left side: Logo & Title */}
+      <div className="flex items-center gap-2 pl-3 pointer-events-none select-none">
+        <div className="w-5 h-5 rounded bg-gradient-to-br from-brand-accent to-brand-accent-secondary p-[1px] flex items-center justify-center">
+          <img src={appLogo} alt="Logo" className="w-full h-full object-cover rounded-sm" referrerPolicy="no-referrer" />
+        </div>
+        <span className="font-black tracking-tight text-white font-mono text-[11px]">JeyNode</span>
+        <span className="text-[8px] bg-brand-accent-secondary/25 text-brand-accent px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider scale-90">desktop</span>
+      </div>
+
+      {/* Draggable center region */}
+      <div 
+        data-tauri-drag-region 
+        className="flex-1 h-full flex items-center justify-center text-[10px] text-brand-text-muted cursor-default font-sans truncate px-4"
+        onDoubleClick={handleMaximize}
+      >
+        {lang === 'fa' ? 'مدیریت گرایش و سرورهای محلی JeyNode' : 'JeyNode Local Server Management Console'}
+      </div>
+
+      {/* Right side: standard Windows-style control buttons */}
+      <div className="flex items-center h-full">
+        {/* Minimize */}
+        <button
+          onClick={handleMinimize}
+          className="w-11 h-full flex items-center justify-center text-brand-text-muted hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+          title="Minimize"
+        >
+          <svg className="w-3.5 h-3.5" viewBox="0 0 10 10">
+            <path d="M1,5 L9,5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+          </svg>
+        </button>
+
+        {/* Maximize / Restore */}
+        <button
+          onClick={handleMaximize}
+          className="w-11 h-full flex items-center justify-center text-brand-text-muted hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+          title={isMaximized ? "Restore Down" : "Maximize"}
+        >
+          {isMaximized ? (
+            <svg className="w-3.5 h-3.5" viewBox="0 0 10 10">
+              <path d="M2.5,4.5 L2.5,1.5 L8.5,1.5 L8.5,7.5 L5.5,7.5" fill="none" stroke="currentColor" strokeWidth="1" />
+              <path d="M1.5,3.5 L7.5,3.5 L7.5,9.5 L1.5,9.5 Z" fill="none" stroke="currentColor" strokeWidth="1" />
+            </svg>
+          ) : (
+            <svg className="w-3.5 h-3.5" viewBox="0 0 10 10">
+              <rect x="2" y="2" width="6" height="6" fill="none" stroke="currentColor" strokeWidth="1.2" />
+            </svg>
+          )}
+        </button>
+
+        {/* Close */}
+        <button
+          onClick={handleClose}
+          className="w-11 h-full flex items-center justify-center text-brand-text-muted hover:text-white hover:bg-rose-600 transition-colors cursor-pointer"
+          title="Close"
+        >
+          <svg className="w-3.5 h-3.5" viewBox="0 0 10 10">
+            <path d="M2.5,2.5 L7.5,7.5 M2.5,7.5 L7.5,2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
   // Onboarding verification checks
   const [isOnboarded, setIsOnboarded] = useState<boolean>(() => {
@@ -822,12 +970,14 @@ export default function App() {
   }
 
   return (
-    <div className={`min-h-screen bg-brand-bg text-brand-text transition-colors duration-300 theme-${settings.theme}`} style={{ direction: lang === 'fa' ? 'rtl' : 'ltr' }}>
+    <div className={`min-h-screen bg-brand-bg text-brand-text transition-colors duration-300 theme-${settings.theme} flex flex-col`} style={{ direction: lang === 'fa' ? 'rtl' : 'ltr' }}>
+      <TauriTitleBar lang={lang} />
       
-      <div className="flex flex-col md:flex-row min-h-screen">
+      <div className="flex flex-col md:flex-row flex-1">
         
         {/* SIDEBAR NAVIGATION - Collapsible & Premium */}
-        <aside className={`bg-brand-card/95 border-brand-border/40 backdrop-blur-md transition-all duration-300 flex-shrink-0 flex flex-col justify-between z-30 md:sticky md:top-0 md:h-screen overflow-y-auto
+        <aside className={`bg-brand-card/95 border-brand-border/40 backdrop-blur-md transition-all duration-300 flex-shrink-0 flex flex-col justify-between z-30 md:sticky overflow-y-auto
+          ${isTauri ? 'md:top-10 md:h-[calc(100vh-2.5rem)]' : 'md:top-0 md:h-screen'}
           ${isSidebarCollapsed ? 'w-20' : 'w-64'} 
           ${lang === 'fa' ? 'border-l border-brand-border/30 md:border-l' : 'border-r border-brand-border/30 md:border-r'}
           hidden md:flex`}
@@ -918,7 +1068,7 @@ export default function App() {
 
             {/* 4. Linux Commands Link */}
             <a
-              href="https://jeybox.ir/linux/"
+              href="https://jeybox.ir/linux/" onClick={(e) => { e.preventDefault(); openExternalUrl('https://jeybox.ir/linux/'); }}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all font-mono font-semibold text-xs cursor-pointer text-brand-text-muted hover:text-white hover:bg-brand-accent/15 border border-transparent group"
