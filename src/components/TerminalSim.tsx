@@ -34,7 +34,7 @@ export function TerminalSim({ server, lang }: TerminalSimProps) {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [terminalLogs]);
 
-  const runPingSimulation = () => {
+  const runPingSimulation = async () => {
     if (isPingerRunning) return;
 
     setIsPingerRunning(true);
@@ -44,31 +44,62 @@ export function TerminalSim({ server, lang }: TerminalSimProps) {
       t.pingerSim,
     ]);
 
+    const isTauri = typeof window !== 'undefined' && (('__TAURI__' in window) || (window as any).__TAURI__ !== undefined);
+
     let seq = 1;
-    const interval = setInterval(() => {
-      const ms = Math.floor(Math.random() * 85) + 15;
-      const responseLine = t.pingerOnline
-        .replace('{ip}', server.ip)
-        .replace('{ms}', ms.toString());
+    const totalPings = 4;
+    let successfulPings = 0;
+    let minRtt = Infinity;
+    let maxRtt = 0;
+    let totalRtt = 0;
 
-      setTerminalLogs((prev) => [...prev, responseLine]);
+    const interval = setInterval(async () => {
+      let ms: number;
+      let error = false;
 
-      seq++;
-      if (seq > 4) {
+      if (isTauri) {
+        try {
+          const { invoke } = await import('@tauri-apps/api/core');
+          ms = await invoke<number>('ping_server', { ip: server.ip });
+        } catch (err) {
+          error = true;
+          ms = 0;
+        }
+      } else {
+        ms = Math.floor(Math.random() * 85) + 15;
+      }
+
+      if (error) {
+        setTerminalLogs((prev) => [...prev, `Request timeout for icmp_seq ${seq}`]);
+      } else {
+        successfulPings++;
+        minRtt = Math.min(minRtt, ms);
+        maxRtt = Math.max(maxRtt, ms);
+        totalRtt += ms;
+        const responseLine = t.pingerOnline
+          .replace('{ip}', server.ip)
+          .replace('{ms}', ms.toFixed(1));
+        setTerminalLogs((prev) => [...prev, responseLine]);
+      }
+
+      if (seq >= totalPings) {
         clearInterval(interval);
         // Summarize
         setTimeout(() => {
+          const avgRtt = successfulPings > 0 ? (totalRtt / successfulPings).toFixed(2) : "0.00";
+          const loss = ((totalPings - successfulPings) / totalPings * 100).toFixed(0);
           setTerminalLogs((prev) => [
             ...prev,
             `--- ${server.ip} ping statistics ---`,
-            `4 packets transmitted, 4 received, 0% packet loss, time 3004ms`,
-            `rtt min/avg/max/mdev = 15.22/38.45/85.12/12.44 ms`,
+            `${totalPings} packets transmitted, ${successfulPings} received, ${loss}% packet loss, time ${totalPings * 1000}ms`,
+            `rtt min/avg/max = ${minRtt === Infinity ? "0" : minRtt.toFixed(2)}/${avgRtt}/${maxRtt.toFixed(2)} ms`,
             `${t.terminalPrompt} `,
           ]);
           setIsPingerRunning(false);
         }, 300);
       }
-    }, 600);
+      seq++;
+    }, 1000);
   };
 
   const copySshCommand = () => {
