@@ -44,6 +44,7 @@ import windowsLogo from '../assets/os/windows.svg';
 import { LockScreen } from './components/LockScreen';
 import { ServerForm } from './components/ServerForm';
 import { TerminalSim } from './components/TerminalSim';
+import { SshTabTerminal } from './components/SshTabTerminal';
 import { Portal } from 'react-dom'; // we can use simple inline layouts for clean modal wrappers
 import { ProviderCard } from './components/ProviderCard';
 import { StatsGamification } from './components/StatsGamification';
@@ -87,7 +88,9 @@ import {
   Pencil,
   Activity,
   Wifi,
-  Terminal
+  Terminal,
+  Monitor,
+  PlayCircle
 } from 'lucide-react';
 
 const renderOSLogo = (osType: string | undefined, className = "w-4.5 h-4.5 object-contain select-none") => {
@@ -333,6 +336,85 @@ export default function App() {
   // Ping monitoring states tracker
   const [serverPings, setServerPings] = useState<Record<string, { ms?: number; status: 'idle' | 'loading' | 'success' | 'error' }>>({});
   const [showSSHInstructionModal, setShowSSHInstructionModal] = useState<{ isOpen: boolean; cmd: string; serverName: string } | null>(null);
+
+  // Dynamic Tabs state for bottom viewport task bar
+  interface AppTab {
+    id: string; // 'jeynode' or 'ssh_...'
+    title: string;
+    type: 'main' | 'ssh';
+    server?: Server;
+    initialCommand?: string;
+    initialCommandName?: string;
+  }
+  const [appTabs, setAppTabs] = useState<AppTab[]>([{ id: 'jeynode', title: 'JeyNode', type: 'main' }]);
+  const [activeAppTabId, setActiveAppTabId] = useState<string>('jeynode');
+  const [activeSSHActionModalServer, setActiveSSHActionModalServer] = useState<Server | null>(null);
+
+  // Dynamic remote Linux commands list
+  interface LinuxCommand {
+    title_fa: string;
+    title_en: string;
+    description_fa: string;
+    description_en: string;
+    command: string;
+  }
+
+  const [linuxCommands, setLinuxCommands] = useState<LinuxCommand[]>(() => {
+    try {
+      const cached = localStorage.getItem('jeynode_cached_linux_commands');
+      return cached ? JSON.parse(cached) : [];
+    } catch (err) {
+      console.error('Failed to parse cached linux commands:', err);
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    const fetchCommandsTemplates = async () => {
+      try {
+        const response = await fetch('https://jeybox.ir/linux/list.json');
+        if (response.ok) {
+          const list = await response.json();
+          if (Array.isArray(list)) {
+            setLinuxCommands(list);
+            localStorage.setItem('jeynode_cached_linux_commands', JSON.stringify(list));
+          }
+        }
+      } catch (err) {
+        console.warn('Network unreachable for remote commands list, utilizing local cache fallback:', err);
+      }
+    };
+    fetchCommandsTemplates();
+  }, []);
+
+  const spawnSshTab = (server: Server, initialCommand?: string, cmdName?: string) => {
+    // Generate unique tab Id
+    const tabId = `ssh_${server.id}_${Date.now()}`;
+    const newTab: AppTab = {
+      id: tabId,
+      title: `SSH: ${server.name}`,
+      type: 'ssh',
+      server,
+      initialCommand,
+      initialCommandName: cmdName
+    };
+    setAppTabs(prev => [...prev, newTab]);
+    setActiveAppTabId(tabId);
+    setActiveSSHActionModalServer(null); // dismiss action trigger dialog
+  };
+
+  const closeSshTab = (tabId: string) => {
+    setAppTabs(prev => {
+      const nextTabs = prev.filter(t => t.id !== tabId);
+      // If closing focused tab, default to previous tab, or fallback back to 'jeynode' main application
+      if (activeAppTabId === tabId) {
+        const activeIdx = prev.findIndex(t => t.id === tabId);
+        const fallbackId = prev[activeIdx - 1]?.id || 'jeynode';
+        setActiveAppTabId(fallbackId);
+      }
+      return nextTabs;
+    });
+  };
 
   // New Provider registration state
   const [newProvName, setNewProvName] = useState('');
@@ -625,42 +707,7 @@ export default function App() {
   };
 
   const handleLaunchSSH = (server: Server) => {
-    const port = server.sshPort || '22';
-    const sshCmd = `ssh ${server.username}@${server.ip} -p ${port}`;
-
-    // Detect if we are running in electron wrapper
-    const isElectron = typeof window !== 'undefined' && (window as any).process && (window as any).process.versions && (window as any).process.versions.electron;
-    if (isElectron && (window as any).require) {
-      try {
-        const { exec } = (window as any).require('child_process');
-        exec(`start cmd.exe /k "ssh ${server.username}@${server.ip} -p ${port}"`);
-        setClipTip(lang === 'fa' ? 'اتصال در CMD فعال شد' : 'SSH opened in CMD');
-        setTimeout(() => setClipTip(null), 2500);
-        return;
-      } catch (err) {
-        console.error("Electron ssh spawn error:", err);
-      }
-    }
-
-    // Default Web client flow
-    copyToClipboard(sshCmd).then((success) => {
-      // Open detailed elegant guidance modal for Windows/Linux user connect
-      setShowSSHInstructionModal({
-        isOpen: true,
-        cmd: sshCmd,
-        serverName: server.name
-      });
-
-      // Attempt system-wise protocol trigger if default ssh scheme exists
-      try {
-        const sshUrl = `ssh://${server.username}@${server.ip}:${port}`;
-        const cleanLink = document.createElement('a');
-        cleanLink.href = sshUrl;
-        cleanLink.click();
-      } catch (err) {
-        console.warn("Native SSH scheme opening failed", err);
-      }
-    });
+    setActiveSSHActionModalServer(server);
   };
 
   // Provider panel logic
@@ -965,7 +1012,7 @@ export default function App() {
 
   if (!isOnboarded) {
     return (
-      <div className={`fixed inset-0 z-50 bg-brand-bg text-brand-text transition-colors duration-300 theme-${settings.theme} flex flex-col`} style={{ direction: lang === 'fa' ? 'rtl' : 'ltr' }}>
+      <div className="fixed inset-0 z-50 text-brand-text transition-colors duration-300 flex flex-col" style={{ direction: lang === 'fa' ? 'rtl' : 'ltr' }}>
         <TauriTitleBar lang={lang} />
         <Onboarding onComplete={handleOnboardComplete} />
       </div>
@@ -989,7 +1036,8 @@ export default function App() {
     <div className={`min-h-screen bg-brand-bg text-brand-text transition-colors duration-300 theme-${settings.theme} flex flex-col`} style={{ direction: lang === 'fa' ? 'rtl' : 'ltr' }}>
       <TauriTitleBar lang={lang} />
       
-      <div className="flex flex-col md:flex-row flex-1">
+      {/* Main JeyNode Application Dashboard */}
+      <div className={`flex flex-col md:flex-row flex-1 ${activeAppTabId === 'jeynode' ? '' : 'hidden'}`}>
         
         {/* SIDEBAR NAVIGATION - Collapsible & Premium */}
         <aside className={`bg-brand-card/95 border-brand-border/40 backdrop-blur-md transition-all duration-300 flex-shrink-0 flex flex-col justify-between z-30 md:sticky overflow-y-auto
@@ -1482,7 +1530,7 @@ export default function App() {
                             <button
                               onClick={() => handleLaunchSSH(server)}
                               className="p-1.5 rounded-lg bg-black/25 text-brand-accent-secondary hover:text-white hover:bg-brand-accent/20 transition-all cursor-pointer"
-                              title={lang === 'fa' ? 'اتصال SSH در CMD ویندوز' : 'Connect SSH in Windows CMD'}
+                              title={lang === 'fa' ? 'مدیریت و اتصال مستقیم SSH سرور' : 'SSH Connection Console & Actions'}
                             >
                               <Terminal className="w-3.5 h-3.5" />
                             </button>
@@ -2693,6 +2741,185 @@ export default function App() {
       </main>
         </div>
       </div>
+
+      {/* Persistent SSH Terminal Tabs */}
+      {appTabs.filter(tab => tab.type !== 'main').map(tab => {
+        const isActive = tab.id === activeAppTabId;
+        return (
+          <div 
+            key={tab.id} 
+            className={`flex-1 p-3 md:p-6 flex flex-col min-h-0 overflow-hidden relative ${isActive ? '' : 'hidden'}`}
+          >
+            {tab.server && (
+              <SshTabTerminal
+                server={tab.server}
+                lang={lang}
+                initialCommand={tab.initialCommand}
+                initialCommandName={tab.initialCommandName}
+                onClose={() => closeSshTab(tab.id)}
+                isActive={isActive}
+              />
+            )}
+          </div>
+        );
+      })}
+
+      {/* PERSISTENT BOTTOM TAB BAR */}
+      <div className="w-full bg-slate-900/90 border-t border-brand-border/30 px-4 py-2 flex items-center justify-between z-40 sticky bottom-0 backdrop-blur-md">
+         {/* Tabs list */}
+         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">
+            {appTabs.map(tab => {
+               const isActive = tab.id === activeAppTabId;
+               return (
+                  <div
+                    key={tab.id}
+                    onClick={() => setActiveAppTabId(tab.id)}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-[11px] font-bold transition-all cursor-pointer relative shrink-0 select-none ${
+                      isActive 
+                        ? 'bg-brand-accent/20 border-brand-accent text-white shadow shadow-brand-accent/20' 
+                        : 'bg-black/30 border-brand-border/30 text-brand-text-muted hover:text-white hover:border-brand-border/60'
+                    }`}
+                  >
+                     {tab.type === 'main' ? (
+                        <Monitor className="w-3.5 h-3.5 text-brand-accent-secondary" />
+                     ) : (
+                        <Terminal className="w-3.5 h-3.5 text-emerald-400" />
+                     )}
+                     <span className="font-mono">{tab.type === 'main' ? 'JeyNode' : tab.title}</span>
+                     
+                     {tab.type !== 'main' && (
+                        <button
+                          onClick={(e) => {
+                             e.stopPropagation();
+                             closeSshTab(tab.id);
+                          }}
+                          className="p-0.5 rounded-md hover:bg-white/10 text-brand-text-muted hover:text-rose-400 transition-colors cursor-pointer"
+                        >
+                           <X className="w-3 h-3" />
+                        </button>
+                     )}
+                  </div>
+               );
+            })}
+         </div>
+
+         {/* Right active indicator */}
+         <div className="hidden sm:flex items-center gap-2 text-[10px] text-brand-text-muted font-mono bg-black/40 px-2.5 py-1 rounded-lg border border-brand-border/20">
+            <span>{lang === 'fa' ? `تب‌های فعال: ${appTabs.length}` : `Active Tabs: ${appTabs.length}`}</span>
+         </div>
+      </div>
+
+      {/* INTERACTIVE MODERN SSH OPTIONS POPUP MODAL */}
+      {activeSSHActionModalServer && (
+        <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in" style={{ direction: lang === 'fa' ? 'rtl' : 'ltr' }}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-brand-card border border-brand-accent/40 rounded-2xl p-6 max-w-md w-full space-y-5 shadow-2xl relative"
+          >
+            <div className="flex items-center justify-between border-b border-brand-border/30 pb-3">
+              <div className="flex items-center gap-2.5">
+                <Terminal className="w-5 h-5 text-emerald-400 animate-pulse animate-duration-1000" />
+                <h3 className="text-xs sm:text-sm font-black text-white font-mono uppercase tracking-wide">
+                  {lang === 'fa' 
+                    ? `مدیریت و اتصال SSH: ${activeSSHActionModalServer.name}` 
+                    : `SSH Console & Actions: ${activeSSHActionModalServer.name}`}
+                </h3>
+              </div>
+              <button 
+                onClick={() => setActiveSSHActionModalServer(null)}
+                className="p-1 rounded-lg hover:bg-white/10 text-brand-text-muted hover:text-white transition-all cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="text-[11px] leading-relaxed text-brand-text-muted">
+              {lang === 'fa' 
+                ? 'یکی از گزینه‌های زیر را برای اتصال به سرور انتخاب نمایید. گزینه‌های پیشرفته با اتصال خودکار، اسکریپت مربوطه را بلافاصله اجرا می‌کنند.'
+                : 'Select an SSH execution policy. Advanced pathways launch specified administration scripts automatically.'}
+            </div>
+
+            {/* Action Buttons list */}
+            <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+              {/* 1. Direct SSH */}
+              <button
+                onClick={() => spawnSshTab(activeSSHActionModalServer)}
+                className="w-full flex items-center justify-between p-3 bg-black/40 hover:bg-emerald-500/10 border border-brand-border/40 hover:border-emerald-500/40 rounded-xl transition-all cursor-pointer group"
+              >
+                <div className="flex items-center gap-3 text-right">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform shrink-0">
+                    <Terminal className="w-4 h-4" />
+                  </div>
+                  <div className="text-left font-sans">
+                    <span className="font-extrabold text-white text-xs block">
+                      {lang === 'fa' ? 'اتصال مستقیم SSH' : 'Direct SSH Connection'}
+                    </span>
+                    <span className="text-[10px] text-brand-text-muted mt-0.5 block">
+                      {lang === 'fa' ? 'باز کردن ترمینال خام آماده دستورات' : 'Open blank console shell ready for commands'}
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-brand-text-muted group-hover:text-emerald-400 transition-colors" />
+              </button>
+
+              {/* Dynamic remote actions or local fallback */}
+              {linuxCommands && linuxCommands.length > 0 ? (
+                linuxCommands.map((item, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => spawnSshTab(activeSSHActionModalServer, item.command, lang === 'fa' ? item.title_fa : item.title_en)}
+                    className="w-full flex items-center justify-between p-3 bg-black/40 hover:bg-brand-accent/10 border border-brand-border/40 hover:border-brand-accent/40 rounded-xl transition-all cursor-pointer group text-left"
+                  >
+                    <div className="flex items-center gap-3 text-right font-sans">
+                      <div className="w-8 h-8 rounded-lg bg-brand-accent/10 flex items-center justify-center text-brand-accent-secondary group-hover:scale-105 transition-transform shrink-0 animate-pulse animate-duration-3000">
+                        <PlayCircle className="w-4 h-4" />
+                      </div>
+                      <div className="text-left">
+                        <span className="font-extrabold text-white text-xs block truncate max-w-[210px]">
+                          {lang === 'fa' ? item.title_fa : item.title_en}
+                        </span>
+                        <span className="text-[10px] text-brand-text-muted mt-0.5 block truncate max-w-[210px]">
+                          {lang === 'fa' ? item.description_fa : item.description_en}
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-brand-text-muted group-hover:text-brand-accent transition-colors" />
+                  </button>
+                ))
+              ) : (
+                /* Fallback if list load was empty and no previous cache exists - show System Update as requested */
+                <button
+                  onClick={() => spawnSshTab(activeSSHActionModalServer, 'update', lang === 'fa' ? 'بروزرسانی سیستم' : 'Upgrade OS')}
+                  className="w-full flex items-center justify-between p-3 bg-black/40 hover:bg-brand-accent/10 border border-brand-border/40 hover:border-brand-accent/40 rounded-xl transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center gap-3 text-right font-sans">
+                    <div className="w-8 h-8 rounded-lg bg-brand-accent/10 flex items-center justify-center text-brand-accent-secondary group-hover:scale-105 transition-transform shrink-0">
+                      <RefreshCw className="w-4 h-4" />
+                    </div>
+                    <div className="text-left">
+                      <span className="font-extrabold text-white text-xs block font-sans">
+                        {lang === 'fa' ? 'بروزرسانی تدارکاتی سرور (apt update)' : 'System Packages Upgrade'}
+                      </span>
+                      <span className="text-[10px] text-brand-text-muted mt-0.5 block">
+                        {lang === 'fa' ? 'اتصال و اجرای خودکار دستور آپدیت سیستم‌عامل' : 'Connect & update server kernel dependencies'}
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-brand-text-muted group-hover:text-brand-accent transition-colors" />
+                </button>
+              )}
+            </div>
+
+            {/* Warning/Status note */}
+            <div className="text-[10px] text-brand-text-muted/60 text-center italic mt-1 leading-relaxed">
+              {lang === 'fa' 
+                ? 'تمامی اتصال‌ها به صورت امن و ایزوله در هسته شبیه‌ساز برنامه سازماندهی می‌گردند.'
+                : 'All sessions are cataloged through JeyNode virtual SSH sandboxes securely.'}
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* APP HARD RESET CONFIRMATION MODAL */}
       {showResetConfirmModal && (
